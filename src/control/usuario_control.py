@@ -23,6 +23,7 @@ class UsuarioControl:
 
         novo_usuario = ResponsavelFamiliar(
             nome=dados["nome"],
+            login=dados["login"],
             email=dados["email"],
             senha=dados["senha"],
             parentesco_principal=dados["parentesco_principal"]
@@ -36,6 +37,7 @@ class UsuarioControl:
 
         novo_usuario = FamiliarPaciente(
             nome=dados["nome"],
+            login=dados["login"],
             email=dados["email"],
             senha=dados["senha"],
             data_nascimento=dados["data_nascimento"],

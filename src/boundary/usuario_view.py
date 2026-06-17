@@ -1,4 +1,5 @@
 from control.usuario_control import UsuarioControl
+from entity.exceptions import ValidacaoError
 
 
 class UsuarioView:
@@ -14,6 +15,7 @@ class UsuarioView:
         """Coleta dados comuns a todos os tipos de usuário."""
         return {
             "nome": input("Nome: "),
+            "login": input("Login: "),
             "email": input("Email: "),
             "senha": input("Senha: "),
         }
@@ -26,7 +28,7 @@ class UsuarioView:
         try:
             self._control.adicionar_familiar_paciente(dados)
             print("Familiar paciente cadastrado com sucesso!")
-        except ValueError as e:
+        except (ValidacaoError, ValueError) as e:
             print(f"Erro: {e}")
 
     def _adicionar_responsavel_familiar(self) -> None:
@@ -36,7 +38,7 @@ class UsuarioView:
         try:
             self._control.adicionar_responsavel_familiar(dados)
             print("Responsável familiar cadastrado com sucesso!")
-        except ValueError as e:
+        except (ValidacaoError, ValueError) as e:
             print(f"Erro: {e}")
 
     def _listar_usuarios(self) -> None:
