@@ -1,4 +1,5 @@
 from control.usuario_control import UsuarioControl
+from entity.exceptions import PersistenciaError, ValidacaoError
 
 
 class UsuarioView:
@@ -7,13 +8,14 @@ class UsuarioView:
     Responsável apenas por entrada e saída de dados.
     """
 
-    def __init__(self):
-        self._control = UsuarioControl()
+    def __init__(self, control: UsuarioControl | None = None):
+        self._control = control if control is not None else UsuarioControl()
 
     def _coletar_dados_base(self) -> dict:
         """Coleta dados comuns a todos os tipos de usuário."""
         return {
             "nome": input("Nome: "),
+            "login": input("Login: "),
             "email": input("Email: "),
             "senha": input("Senha: "),
         }
@@ -26,8 +28,10 @@ class UsuarioView:
         try:
             self._control.adicionar_familiar_paciente(dados)
             print("Familiar paciente cadastrado com sucesso!")
-        except ValueError as e:
+        except (ValidacaoError, ValueError) as e:
             print(f"Erro: {e}")
+        except PersistenciaError as e:
+            print(f"Erro de armazenamento: {e}")
 
     def _adicionar_responsavel_familiar(self) -> None:
         print("\n--- Cadastro de Responsável Familiar ---")
@@ -36,8 +40,10 @@ class UsuarioView:
         try:
             self._control.adicionar_responsavel_familiar(dados)
             print("Responsável familiar cadastrado com sucesso!")
-        except ValueError as e:
+        except (ValidacaoError, ValueError) as e:
             print(f"Erro: {e}")
+        except PersistenciaError as e:
+            print(f"Erro de armazenamento: {e}")
 
     def _listar_usuarios(self) -> None:
         print("\n--- Lista de Usuários ---")

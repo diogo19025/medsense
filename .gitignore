@@ -2,3 +2,7 @@ venv/
 .venv/
 __pycache__/
 .vscode/
+
+# Arquivos de persistência gerados em tempo de execução
+*.dat
+*.db
