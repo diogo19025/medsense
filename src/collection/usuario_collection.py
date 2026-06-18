@@ -18,6 +18,10 @@ class UsuarioCollection:
             raise ValueError(f"Já existe um usuário com o email '{usuario.email}'.")
         self._usuarios.append(usuario)
 
+    # Remove um usuário da coleção pelo id (no-op se não encontrado).
+    def remover(self, usuario: Usuario) -> None:
+        self._usuarios = [u for u in self._usuarios if u.id != usuario.id]
+
     # Retorna uma cópia da lista com todos os usuários cadastrados.
     def listar_todos(self) -> list[Usuario]:
         return list(self._usuarios)
