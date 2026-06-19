@@ -1,5 +1,5 @@
 from control.usuario_control import UsuarioControl
-from entity.exceptions import PersistenciaError, ValidacaoError
+from entity.exceptions import PersistenciaError, ValidacaoError, SenhaInvalidaError, LoginInvalidoError
 
 
 class UsuarioView:
@@ -13,11 +13,32 @@ class UsuarioView:
 
     def _coletar_dados_base(self) -> dict:
         """Coleta dados comuns a todos os tipos de usuário."""
+
+        nome = input("Nome: ")
+
+        while True:
+            try:
+                login = input("Login: ")
+                self._control.validar_login(login)
+                break
+            except LoginInvalidoError as erro:
+                print(erro)
+        
+        email = input("Email: ")
+
+        while True:
+            try:
+                senha = input("Senha: ")
+                self._control.validar_senha(senha, login, nome, email)
+                break
+            except SenhaInvalidaError as erro:
+                print(erro)
+
         return {
-            "nome": input("Nome: "),
-            "login": input("Login: "),
-            "email": input("Email: "),
-            "senha": input("Senha: "),
+            "nome": nome,
+            "login": login,
+            "email": email,
+            "senha": senha
         }
 
     def _adicionar_familiar_paciente(self) -> None:
