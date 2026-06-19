@@ -2,6 +2,7 @@ from collection.repositorio_usuario import RepositorioUsuario
 from collection.usuario_collection import UsuarioCollection
 from entity.familiar_paciente import FamiliarPaciente
 from entity.responsavel_familiar import ResponsavelFamiliar
+from entity.validador_usuario import ValidadorUsuario
 from entity.usuario import Usuario
 
 class UsuarioControl:
@@ -36,6 +37,13 @@ class UsuarioControl:
         except Exception:
             self._collection.remover(novo_usuario)
             raise
+
+    def validar_senha(self, senha: str, login: str, nome:str = "", email: str = "") -> None:
+        indentificadores = (login, nome, email)
+        ValidadorUsuario.validar_senha(senha, indentificadores)
+
+    def validar_login(self, login: str) -> None:
+        ValidadorUsuario.validar_login(login)    
 
     def listar_usuarios(self) -> list[Usuario]:
         # devolde explicitamente uma lista de usuários, mostrando na definição ao usar a função

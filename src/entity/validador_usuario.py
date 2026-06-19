@@ -20,10 +20,12 @@ class ValidadorUsuario:
     def validar_login(login: str) -> None:
         if not login.strip():
             raise LoginInvalidoError("O login não pode ser vazio.")
+
         if len(login) > LOGIN_TAMANHO_MAXIMO:
             raise LoginInvalidoError(
                 f"O login deve ter no máximo {LOGIN_TAMANHO_MAXIMO} caracteres."
             )
+        
         if any(caractere.isdigit() for caractere in login):
             raise LoginInvalidoError("O login não pode conter números.")
 
@@ -35,11 +37,13 @@ class ValidadorUsuario:
                 f"A senha deve ter entre {SENHA_TAMANHO_MINIMO} e "
                 f"{SENHA_TAMANHO_MAXIMO} caracteres."
             )
+        
         if ValidadorUsuario._contar_tipos_de_caractere(senha) < SENHA_TIPOS_MINIMOS:
             raise SenhaInvalidaError(
                 f"A senha deve combinar ao menos {SENHA_TIPOS_MINIMOS} tipos entre "
                 "maiúsculas, minúsculas, números e símbolos."
             )
+            
         if senha in identificadores:
             raise SenhaInvalidaError(
                 "A senha não pode ser idêntica ao login, nome ou email."
