@@ -6,3 +6,6 @@ __pycache__/
 # Arquivos de persistência gerados em tempo de execução
 *.dat
 *.db
+
+# Relatórios gerados em tempo de execução
+relatorio_acessos.*
