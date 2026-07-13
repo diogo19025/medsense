@@ -4,6 +4,7 @@ from entity.familiar_paciente import FamiliarPaciente
 from entity.responsavel_familiar import ResponsavelFamiliar
 from entity.validador_usuario import ValidadorUsuario
 from entity.usuario import Usuario
+from infra.logger import Logger, LoggerNulo
 
 class UsuarioControl:
     """
@@ -13,11 +14,19 @@ class UsuarioControl:
     A coleção em RAM é o cache de trabalho. Quando um repositório durável
     (arquivo binário ou banco de dados) é informado, ele é carregado para a
     RAM no início da execução e atualizado a cada novo cadastro.
+
+    Depende da porta de log `Logger` (padrão Adapter) para registrar eventos,
+    sem se acoplar a nenhuma biblioteca concreta de log.
     """
 
-    def __init__(self, repositorio: RepositorioUsuario | None = None):
+    def __init__(
+        self,
+        repositorio: RepositorioUsuario | None = None,
+        logger: Logger | None = None,
+    ):
         self._collection = UsuarioCollection()
         self._repositorio = repositorio
+        self._logger = logger if logger is not None else LoggerNulo()
         self._carregar_do_repositorio()
 
     # Chaveia o armazenamento durável para a RAM no início da execução.
@@ -34,9 +43,15 @@ class UsuarioControl:
         try:
             if self._repositorio is not None:
                 self._repositorio.salvar(self._collection.listar_todos())
-        except Exception:
+        except Exception as erro:
             self._collection.remover(novo_usuario)
+            self._logger.erro(
+                f"Falha ao persistir usuario '{novo_usuario.login}': {erro}"
+            )
             raise
+        self._logger.info(
+            f"Usuario cadastrado: {novo_usuario.login} ({novo_usuario.tipo_usuario})"
+        )
 
     def validar_senha(self, senha: str, login: str, nome:str = "", email: str = "") -> None:
         indentificadores = (login, nome, email)

@@ -4,6 +4,7 @@ from collection.repositorio_sqlite import RepositorioSQLite
 from collection.repositorio_usuario import RepositorioUsuario
 from control.usuario_control import UsuarioControl
 from entity.exceptions import PersistenciaError
+from infra.logging_adapter import LoggingAdapter
 
 
 # Permite chavear o mecanismo de armazenamento no início da execução.
@@ -23,7 +24,7 @@ def selecionar_repositorio() -> RepositorioUsuario | None:
 def main():
     try:
         repositorio = selecionar_repositorio()
-        control = UsuarioControl(repositorio)
+        control = UsuarioControl(repositorio, logger=LoggingAdapter())
     except PersistenciaError as erro:
         print(f"Erro ao inicializar o armazenamento: {erro}")
         return
