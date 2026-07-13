@@ -75,6 +75,33 @@ class UsuarioView:
         for usuario in usuarios:
             print(usuario)
 
+    def _registrar_acesso(self) -> None:
+        print("\n--- Registrar Acesso ---")
+        email = input("Email do usuário: ")
+        try:
+            registro = self._control.registrar_acesso(email)
+            print(f"Acesso registrado para '{registro.login}'.")
+        except ValueError as e:
+            print(f"Erro: {e}")
+
+    def _gerar_relatorio_acessos(self) -> None:
+        print("\n--- Relatório de Acessos ---")
+        print("  [1] Texto")
+        print("  [2] HTML")
+        escolha = input("Escolha o formato: ").strip()
+        formato = "html" if escolha == "2" else "texto"
+        conteudo = self._control.gerar_relatorio_acessos(formato)
+
+        extensao = "html" if formato == "html" else "txt"
+        caminho = f"relatorio_acessos.{extensao}"
+        try:
+            with open(caminho, "w", encoding="utf-8") as arquivo:
+                arquivo.write(conteudo)
+            print(f"Relatório gerado em '{caminho}'.")
+        except OSError as e:
+            print(f"Erro ao gravar o relatório: {e}")
+        print(conteudo)
+
     def exibir_menu(self) -> None:
         """Exibe o menu principal e processa a escolha do usuário."""
         while True:
@@ -82,6 +109,8 @@ class UsuarioView:
             print("  [1] Adicionar familiar paciente")
             print("  [2] Adicionar responsável familiar")
             print("  [3] Listar todos os usuários")
+            print("  [4] Registrar acesso de usuário")
+            print("  [5] Gerar relatório de acessos")
             print("  [0] Sair")
 
             escolha = input("\nEscolha uma opção: ").strip()
@@ -92,6 +121,10 @@ class UsuarioView:
                 self._adicionar_responsavel_familiar()
             elif escolha == "3":
                 self._listar_usuarios()
+            elif escolha == "4":
+                self._registrar_acesso()
+            elif escolha == "5":
+                self._gerar_relatorio_acessos()
             elif escolha == "0":
                 print("Encerrando o sistema.")
                 break
