@@ -7,8 +7,9 @@ class RepositorioAcesso(ABC):
     """Contrato de persistência de registros de acesso (padrão Repository).
 
     Mesmo papel do RepositorioUsuario, aplicado à entidade RegistroAcesso:
-    a camada de negócio registra e consulta acessos sem conhecer o
-    mecanismo de armazenamento escolhido no início da execução.
+    a interface vive na camada de negócio e as implementações concretas na
+    infraestrutura, de modo que o negócio registre e consulte acessos sem
+    conhecer o mecanismo de armazenamento escolhido no início da execução.
     """
 
     # Lê todos os registros de acesso. Lança PersistenciaError em falha.

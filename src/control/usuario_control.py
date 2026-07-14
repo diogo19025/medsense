@@ -1,4 +1,6 @@
 from collection.acesso_collection import AcessoCollection
+from collection.repositorio_acesso import RepositorioAcesso
+from collection.repositorio_usuario import RepositorioUsuario
 from collection.usuario_collection import UsuarioCollection
 from control.relatorio_acesso import criar_relatorio
 from entity.familiar_paciente import FamiliarPaciente
@@ -7,8 +9,6 @@ from entity.responsavel_familiar import ResponsavelFamiliar
 from entity.validador_usuario import ValidadorUsuario
 from entity.usuario import Usuario
 from infra.logger import Logger, LoggerNulo
-from infra.persistencia.repositorio_acesso import RepositorioAcesso
-from infra.persistencia.repositorio_usuario import RepositorioUsuario
 
 class UsuarioControl:
     """

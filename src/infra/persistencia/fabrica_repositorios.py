@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
-from infra.persistencia.repositorio_acesso import RepositorioAcesso
+from collection.repositorio_acesso import RepositorioAcesso
+from collection.repositorio_usuario import RepositorioUsuario
 from infra.persistencia.repositorio_arquivo import (
     ARQUIVO_ACESSOS_PADRAO,
     ARQUIVO_USUARIOS_PADRAO,
@@ -16,7 +17,6 @@ from infra.persistencia.repositorio_sqlite import (
     RepositorioAcessoSQLite,
     RepositorioSQLite,
 )
-from infra.persistencia.repositorio_usuario import RepositorioUsuario
 
 
 class FabricaRepositorios(ABC):

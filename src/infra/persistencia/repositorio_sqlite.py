@@ -1,13 +1,13 @@
 import sqlite3
 from datetime import datetime
 
+from collection.repositorio_acesso import RepositorioAcesso
+from collection.repositorio_usuario import RepositorioUsuario
 from entity.exceptions import BancoDadosError
 from entity.familiar_paciente import FamiliarPaciente
 from entity.registro_acesso import RegistroAcesso
 from entity.responsavel_familiar import ResponsavelFamiliar
 from entity.usuario import Usuario
-from infra.persistencia.repositorio_acesso import RepositorioAcesso
-from infra.persistencia.repositorio_usuario import RepositorioUsuario
 
 BANCO_PADRAO = "usuarios.db"
 

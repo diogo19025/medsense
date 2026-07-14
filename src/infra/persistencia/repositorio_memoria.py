@@ -1,7 +1,7 @@
+from collection.repositorio_acesso import RepositorioAcesso
+from collection.repositorio_usuario import RepositorioUsuario
 from entity.registro_acesso import RegistroAcesso
 from entity.usuario import Usuario
-from infra.persistencia.repositorio_acesso import RepositorioAcesso
-from infra.persistencia.repositorio_usuario import RepositorioUsuario
 
 
 class RepositorioUsuarioMemoria(RepositorioUsuario):

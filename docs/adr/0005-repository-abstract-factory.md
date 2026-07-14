@@ -19,12 +19,16 @@ repositório diretamente.
 
 ## Decisão
 
-1. Criar o pacote `src/infra/persistencia` e mover para lá todo o código de
-   persistência, seguindo o precedente do ADR-0003 (a porta `Logger` também
-   vive em `infra`). A camada `collection` volta a conter apenas as coleções
-   em RAM (cache de trabalho).
-2. Ter um contrato de Repository por entidade:
-   - `RepositorioUsuario` (movido de `collection`);
+1. Criar o pacote `src/infra/persistencia` e mover para lá as
+   **implementações concretas** de persistência (pickle, sqlite3). Os
+   **contratos** (interfaces ABC) permanecem na camada de negócio
+   (`src/collection`), ao lado das coleções em RAM — Inversão de
+   Dependência: o negócio define o contrato e nunca importa código de
+   infra; a infra implementa. Manter a interface na camada de negócio (e
+   não na infra) segue a Regra de Dependência da Clean Architecture, que
+   classifica "interface do Repository na infraestrutura" como violação.
+2. Ter um contrato de Repository por entidade, em `src/collection`:
+   - `RepositorioUsuario` (já existente);
    - `RepositorioAcesso` (novo, para `RegistroAcesso`).
 3. Fornecer três implementações por entidade: memória
    (`Repositorio*Memoria`), arquivo binário (pickle) e SQLite. Os
@@ -59,9 +63,10 @@ repositório diretamente.
 - A camada de negócio depende apenas dos contratos de Repository; trocar ou
   adicionar um mecanismo (ex.: JSON, servidor remoto) é escrever uma nova
   família e registrá-la em `MECANISMOS_DISPONIVEIS`, sem tocar em `control`.
-- Os imports de `collection.repositorio_*` mudaram para
-  `infra.persistencia.repositorio_*` — mudança de contrato público
-  registrada por este ADR, conforme a regra 3 do `CONTRIBUTING.md`.
+- As implementações concretas mudaram de `collection.repositorio_*` para
+  `infra.persistencia.repositorio_*` (os contratos permanecem em
+  `collection`) — mudança de contrato público registrada por este ADR,
+  conforme a regra 3 do `CONTRIBUTING.md`.
 - Os registros de acesso passam a sobreviver entre execuções nos mecanismos
   duráveis, e os relatórios do ADR-0004 podem cobrir acessos históricos.
 - O diagrama de classes deve exibir `FabricaRepositorios` e suas famílias com

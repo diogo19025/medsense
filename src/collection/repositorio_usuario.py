@@ -6,11 +6,12 @@ from entity.usuario import Usuario
 class RepositorioUsuario(ABC):
     """Contrato de persistência de usuários (padrão Repository).
 
-    Separa a camada de negócio (control) da camada de persistência (infra):
-    o control depende apenas deste contrato, e cada mecanismo de
-    armazenamento (memória, arquivo binário ou banco de dados) é uma
-    implementação concreta selecionada pela FabricaRepositorios no início
-    da execução ("chaveamento").
+    A interface vive na camada de negócio e as implementações concretas na
+    infraestrutura (infra/persistencia) — Inversão de Dependência: a camada
+    de negócio define o contrato e nunca importa código de infra. O
+    mecanismo de armazenamento (memória, arquivo binário ou banco de dados)
+    é selecionado pela FabricaRepositorios no início da execução
+    ("chaveamento").
     """
 
     # Lê todos os usuários do meio durável. Lança PersistenciaError em falha.

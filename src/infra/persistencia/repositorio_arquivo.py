@@ -1,11 +1,11 @@
 import pickle
 from pathlib import Path
 
+from collection.repositorio_acesso import RepositorioAcesso
+from collection.repositorio_usuario import RepositorioUsuario
 from entity.exceptions import ArquivoPersistenciaError
 from entity.registro_acesso import RegistroAcesso
 from entity.usuario import Usuario
-from infra.persistencia.repositorio_acesso import RepositorioAcesso
-from infra.persistencia.repositorio_usuario import RepositorioUsuario
 
 ARQUIVO_USUARIOS_PADRAO = "usuarios.dat"
 ARQUIVO_ACESSOS_PADRAO = "acessos.dat"
