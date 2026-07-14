@@ -5,9 +5,9 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from collection.repositorio_arquivo import RepositorioArquivoBinario
-from collection.repositorio_sqlite import RepositorioSQLite
-from collection.repositorio_usuario import RepositorioUsuario
+from infra.persistencia.repositorio_arquivo import RepositorioArquivoBinario
+from infra.persistencia.repositorio_sqlite import RepositorioSQLite
+from infra.persistencia.repositorio_usuario import RepositorioUsuario
 from control.usuario_control import UsuarioControl
 from entity.exceptions import (
     ArquivoPersistenciaError,

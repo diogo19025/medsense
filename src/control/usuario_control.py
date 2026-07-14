@@ -1,5 +1,4 @@
 from collection.acesso_collection import AcessoCollection
-from collection.repositorio_usuario import RepositorioUsuario
 from collection.usuario_collection import UsuarioCollection
 from control.relatorio_acesso import criar_relatorio
 from entity.familiar_paciente import FamiliarPaciente
@@ -8,6 +7,8 @@ from entity.responsavel_familiar import ResponsavelFamiliar
 from entity.validador_usuario import ValidadorUsuario
 from entity.usuario import Usuario
 from infra.logger import Logger, LoggerNulo
+from infra.persistencia.repositorio_acesso import RepositorioAcesso
+from infra.persistencia.repositorio_usuario import RepositorioUsuario
 
 class UsuarioControl:
     """
@@ -26,19 +27,23 @@ class UsuarioControl:
         self,
         repositorio: RepositorioUsuario | None = None,
         logger: Logger | None = None,
+        repositorio_acessos: RepositorioAcesso | None = None,
     ):
         self._collection = UsuarioCollection()
         self._acessos = AcessoCollection()
         self._repositorio = repositorio
+        self._repositorio_acessos = repositorio_acessos
         self._logger = logger if logger is not None else LoggerNulo()
         self._carregar_do_repositorio()
 
     # Chaveia o armazenamento durável para a RAM no início da execução.
     def _carregar_do_repositorio(self) -> None:
-        if self._repositorio is None:
-            return
-        for usuario in self._repositorio.carregar():
-            self._collection.adicionar(usuario)
+        if self._repositorio is not None:
+            for usuario in self._repositorio.carregar():
+                self._collection.adicionar(usuario)
+        if self._repositorio_acessos is not None:
+            for registro in self._repositorio_acessos.carregar():
+                self._acessos.adicionar(registro)
 
     # Adiciona à RAM e espelha no armazenamento durável, desfazendo a
     # adição em RAM caso a persistência falhe (mantém os dois consistentes).
@@ -70,6 +75,15 @@ class UsuarioControl:
             acao=acao,
         )
         self._acessos.adicionar(registro)
+        try:
+            if self._repositorio_acessos is not None:
+                self._repositorio_acessos.salvar(self._acessos.listar_todos())
+        except Exception as erro:
+            self._acessos.remover(registro)
+            self._logger.erro(
+                f"Falha ao persistir acesso de '{usuario.login}': {erro}"
+            )
+            raise
         self._logger.info(f"Acesso registrado: {usuario.login} ({acao})")
         return registro
 

@@ -16,6 +16,10 @@ class AcessoCollection:
     def adicionar(self, registro: RegistroAcesso) -> None:
         self._registros.append(registro)
 
+    # Remove um registro da coleção (no-op se não encontrado).
+    def remover(self, registro: RegistroAcesso) -> None:
+        self._registros = [r for r in self._registros if r is not registro]
+
     # Retorna uma cópia da lista com todos os registros de acesso.
     def listar_todos(self) -> list[RegistroAcesso]:
         return list(self._registros)

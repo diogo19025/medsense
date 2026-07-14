@@ -4,12 +4,13 @@ from entity.usuario import Usuario
 
 
 class RepositorioUsuario(ABC):
-    """Contrato de persistência de usuários.
+    """Contrato de persistência de usuários (padrão Repository).
 
-    Define o ponto de troca ("chaveamento") entre os mecanismos de
-    armazenamento. A coleção em RAM (UsuarioCollection) é o cache de
-    trabalho; uma implementação deste contrato é o armazenamento durável
-    (arquivo binário ou banco de dados) carregado no início da execução.
+    Separa a camada de negócio (control) da camada de persistência (infra):
+    o control depende apenas deste contrato, e cada mecanismo de
+    armazenamento (memória, arquivo binário ou banco de dados) é uma
+    implementação concreta selecionada pela FabricaRepositorios no início
+    da execução ("chaveamento").
     """
 
     # Lê todos os usuários do meio durável. Lança PersistenciaError em falha.
