@@ -10,6 +10,10 @@ class SenhaInvalidaError(ValidacaoError):
     """Senha informada viola a política de segurança."""
 
 
+class PerfilSaudeInvalidoError(ValidacaoError):
+    """Perfil de saúde informado viola as regras de cadastro."""
+
+
 class PersistenciaError(Exception):
     """Erro base para falhas ao persistir ou recuperar usuários."""
 
