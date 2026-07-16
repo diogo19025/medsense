@@ -1,10 +1,13 @@
+import json
 import sqlite3
 from datetime import datetime
 
 from collection.repositorio_acesso import RepositorioAcesso
+from collection.repositorio_perfil_saude import RepositorioPerfilSaude
 from collection.repositorio_usuario import RepositorioUsuario
 from entity.exceptions import BancoDadosError
 from entity.familiar_paciente import FamiliarPaciente
+from entity.perfil_saude import PerfilSaude
 from entity.registro_acesso import RegistroAcesso
 from entity.responsavel_familiar import ResponsavelFamiliar
 from entity.usuario import Usuario
@@ -235,4 +238,114 @@ class RepositorioAcessoSQLite(RepositorioAcesso):
             tipo_usuario=linha["tipo_usuario"],
             acao=linha["acao"],
             momento=datetime.fromisoformat(linha["momento"]),
+        )
+
+
+class RepositorioPerfilSaudeSQLite(RepositorioPerfilSaude):
+    """Persistência de perfis de saúde em banco de dados SQLite.
+
+    Compartilha o mesmo arquivo de banco do RepositorioSQLite (tabela
+    própria `perfis_saude`), formando com ele a família SQLite de
+    repositórios. As listas (alergias, condições, medicamentos) são
+    serializadas em JSON, pois SQLite não possui tipo de coluna de lista.
+    """
+
+    def __init__(self, caminho: str = BANCO_PADRAO):
+        self._caminho = str(caminho)
+        self._criar_tabela()
+
+    def _conectar(self) -> sqlite3.Connection:
+        return sqlite3.connect(self._caminho)
+
+    # Garante que a tabela exista antes de qualquer leitura ou escrita.
+    def _criar_tabela(self) -> None:
+        conexao = None
+        try:
+            conexao = self._conectar()
+            conexao.execute(
+                """
+                CREATE TABLE IF NOT EXISTS perfis_saude (
+                    id TEXT PRIMARY KEY,
+                    usuario_id TEXT NOT NULL UNIQUE,
+                    tipo_sanguineo TEXT NOT NULL,
+                    alergias TEXT NOT NULL,
+                    condicoes_cronicas TEXT NOT NULL,
+                    medicamentos_continuos TEXT NOT NULL,
+                    observacoes TEXT NOT NULL
+                )
+                """
+            )
+            conexao.commit()
+        except sqlite3.Error as erro:
+            raise BancoDadosError(
+                f"Falha ao preparar a tabela de perfis de saúde: {erro}"
+            ) from erro
+        finally:
+            if conexao is not None:
+                conexao.close()
+
+    # Lê todos os perfis de saúde do banco.
+    def carregar(self) -> list[PerfilSaude]:
+        conexao = None
+        try:
+            conexao = self._conectar()
+            conexao.row_factory = sqlite3.Row
+            linhas = conexao.execute("SELECT * FROM perfis_saude").fetchall()
+        except sqlite3.Error as erro:
+            raise BancoDadosError(
+                f"Falha ao carregar perfis de saúde do banco: {erro}"
+            ) from erro
+        finally:
+            if conexao is not None:
+                conexao.close()
+        return [self._reconstruir(linha) for linha in linhas]
+
+    # Reescreve toda a coleção: limpa a tabela e insere os perfis atuais.
+    def salvar(self, perfis: list[PerfilSaude]) -> None:
+        conexao = None
+        try:
+            conexao = self._conectar()
+            conexao.execute("DELETE FROM perfis_saude")
+            conexao.executemany(
+                """
+                INSERT INTO perfis_saude
+                    (id, usuario_id, tipo_sanguineo, alergias,
+                     condicoes_cronicas, medicamentos_continuos, observacoes)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                [self._para_linha(perfil) for perfil in perfis],
+            )
+            conexao.commit()
+        except sqlite3.Error as erro:
+            raise BancoDadosError(
+                f"Falha ao salvar perfis de saúde no banco: {erro}"
+            ) from erro
+        finally:
+            if conexao is not None:
+                conexao.close()
+
+    # Achata um perfil em uma linha da tabela (listas em JSON).
+    @staticmethod
+    def _para_linha(perfil: PerfilSaude) -> tuple:
+        return (
+            perfil.id,
+            perfil.usuario_id,
+            perfil.tipo_sanguineo,
+            json.dumps(perfil.alergias),
+            json.dumps(perfil.condicoes_cronicas),
+            json.dumps(perfil.medicamentos_continuos),
+            perfil.observacoes,
+        )
+
+    # Recria o perfil de saúde a partir de uma linha da tabela.
+    @staticmethod
+    def _reconstruir(linha: sqlite3.Row) -> PerfilSaude:
+        return PerfilSaude(
+            id=linha["id"],
+            usuario_id=linha["usuario_id"],
+            tipo_sanguineo=linha["tipo_sanguineo"],
+            alergias=json.loads(linha["alergias"]),
+            condicoes_cronicas=json.loads(linha["condicoes_cronicas"]),
+            medicamentos_continuos=json.loads(linha["medicamentos_continuos"]),
+            observacoes=linha["observacoes"],
         )
