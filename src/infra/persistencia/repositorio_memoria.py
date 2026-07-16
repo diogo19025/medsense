@@ -1,5 +1,7 @@
 from collection.repositorio_acesso import RepositorioAcesso
+from collection.repositorio_perfil_saude import RepositorioPerfilSaude
 from collection.repositorio_usuario import RepositorioUsuario
+from entity.perfil_saude import PerfilSaude
 from entity.registro_acesso import RegistroAcesso
 from entity.usuario import Usuario
 
@@ -33,3 +35,16 @@ class RepositorioAcessoMemoria(RepositorioAcesso):
 
     def salvar(self, registros: list[RegistroAcesso]) -> None:
         self._registros = list(registros)
+
+
+class RepositorioPerfilSaudeMemoria(RepositorioPerfilSaude):
+    """Persistência de perfis de saúde em memória RAM."""
+
+    def __init__(self):
+        self._perfis: list[PerfilSaude] = []
+
+    def carregar(self) -> list[PerfilSaude]:
+        return list(self._perfis)
+
+    def salvar(self, perfis: list[PerfilSaude]) -> None:
+        self._perfis = list(perfis)

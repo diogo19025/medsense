@@ -1,20 +1,25 @@
 from abc import ABC, abstractmethod
 
 from collection.repositorio_acesso import RepositorioAcesso
+from collection.repositorio_perfil_saude import RepositorioPerfilSaude
 from collection.repositorio_usuario import RepositorioUsuario
 from infra.persistencia.repositorio_arquivo import (
     ARQUIVO_ACESSOS_PADRAO,
+    ARQUIVO_PERFIS_PADRAO,
     ARQUIVO_USUARIOS_PADRAO,
     RepositorioAcessoArquivo,
     RepositorioArquivoBinario,
+    RepositorioPerfilSaudeArquivo,
 )
 from infra.persistencia.repositorio_memoria import (
     RepositorioAcessoMemoria,
+    RepositorioPerfilSaudeMemoria,
     RepositorioUsuarioMemoria,
 )
 from infra.persistencia.repositorio_sqlite import (
     BANCO_PADRAO,
     RepositorioAcessoSQLite,
+    RepositorioPerfilSaudeSQLite,
     RepositorioSQLite,
 )
 
@@ -36,6 +41,10 @@ class FabricaRepositorios(ABC):
     @abstractmethod
     def criar_repositorio_acessos(self) -> RepositorioAcesso: ...
 
+    # Cria o repositório de perfis de saúde da família.
+    @abstractmethod
+    def criar_repositorio_perfis_saude(self) -> RepositorioPerfilSaude: ...
+
 
 class FabricaRepositoriosMemoria(FabricaRepositorios):
     """Família de repositórios em memória RAM (sem durabilidade)."""
@@ -46,6 +55,9 @@ class FabricaRepositoriosMemoria(FabricaRepositorios):
     def criar_repositorio_acessos(self) -> RepositorioAcesso:
         return RepositorioAcessoMemoria()
 
+    def criar_repositorio_perfis_saude(self) -> RepositorioPerfilSaude:
+        return RepositorioPerfilSaudeMemoria()
+
 
 class FabricaRepositoriosArquivo(FabricaRepositorios):
     """Família de repositórios em arquivo binário (um arquivo por entidade)."""
@@ -54,15 +66,20 @@ class FabricaRepositoriosArquivo(FabricaRepositorios):
         self,
         caminho_usuarios: str = ARQUIVO_USUARIOS_PADRAO,
         caminho_acessos: str = ARQUIVO_ACESSOS_PADRAO,
+        caminho_perfis: str = ARQUIVO_PERFIS_PADRAO,
     ):
         self._caminho_usuarios = caminho_usuarios
         self._caminho_acessos = caminho_acessos
+        self._caminho_perfis = caminho_perfis
 
     def criar_repositorio_usuarios(self) -> RepositorioUsuario:
         return RepositorioArquivoBinario(self._caminho_usuarios)
 
     def criar_repositorio_acessos(self) -> RepositorioAcesso:
         return RepositorioAcessoArquivo(self._caminho_acessos)
+
+    def criar_repositorio_perfis_saude(self) -> RepositorioPerfilSaude:
+        return RepositorioPerfilSaudeArquivo(self._caminho_perfis)
 
 
 class FabricaRepositoriosSQLite(FabricaRepositorios):
@@ -76,6 +93,9 @@ class FabricaRepositoriosSQLite(FabricaRepositorios):
 
     def criar_repositorio_acessos(self) -> RepositorioAcesso:
         return RepositorioAcessoSQLite(self._caminho_banco)
+
+    def criar_repositorio_perfis_saude(self) -> RepositorioPerfilSaude:
+        return RepositorioPerfilSaudeSQLite(self._caminho_banco)
 
 
 # Mapa de mecanismos disponíveis -> fábrica concreta correspondente.

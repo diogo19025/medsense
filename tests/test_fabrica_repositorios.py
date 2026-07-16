@@ -17,13 +17,16 @@ from infra.persistencia.fabrica_repositorios import (
 from infra.persistencia.repositorio_arquivo import (
     RepositorioAcessoArquivo,
     RepositorioArquivoBinario,
+    RepositorioPerfilSaudeArquivo,
 )
 from infra.persistencia.repositorio_memoria import (
     RepositorioAcessoMemoria,
+    RepositorioPerfilSaudeMemoria,
     RepositorioUsuarioMemoria,
 )
 from infra.persistencia.repositorio_sqlite import (
     RepositorioAcessoSQLite,
+    RepositorioPerfilSaudeSQLite,
     RepositorioSQLite,
 )
 
@@ -67,17 +70,24 @@ class FamiliasDeRepositoriosTest(unittest.TestCase):
         self.assertIsInstance(
             fabrica.criar_repositorio_acessos(), RepositorioAcessoMemoria
         )
+        self.assertIsInstance(
+            fabrica.criar_repositorio_perfis_saude(), RepositorioPerfilSaudeMemoria
+        )
 
     def test_fabrica_arquivo_deve_criar_familia_em_arquivo(self):
         fabrica = FabricaRepositoriosArquivo(
             caminho_usuarios=os.path.join(self._dir.name, "u.dat"),
             caminho_acessos=os.path.join(self._dir.name, "a.dat"),
+            caminho_perfis=os.path.join(self._dir.name, "p.dat"),
         )
         self.assertIsInstance(
             fabrica.criar_repositorio_usuarios(), RepositorioArquivoBinario
         )
         self.assertIsInstance(
             fabrica.criar_repositorio_acessos(), RepositorioAcessoArquivo
+        )
+        self.assertIsInstance(
+            fabrica.criar_repositorio_perfis_saude(), RepositorioPerfilSaudeArquivo
         )
 
     def test_fabrica_sqlite_deve_criar_familia_no_mesmo_banco(self):
@@ -86,6 +96,9 @@ class FamiliasDeRepositoriosTest(unittest.TestCase):
         self.assertIsInstance(fabrica.criar_repositorio_usuarios(), RepositorioSQLite)
         self.assertIsInstance(
             fabrica.criar_repositorio_acessos(), RepositorioAcessoSQLite
+        )
+        self.assertIsInstance(
+            fabrica.criar_repositorio_perfis_saude(), RepositorioPerfilSaudeSQLite
         )
         self.assertTrue(os.path.exists(caminho))
 

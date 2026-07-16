@@ -1,4 +1,6 @@
+from boundary.perfil_saude_view import PerfilSaudeView
 from boundary.usuario_view import UsuarioView
+from control.perfil_saude_control import PerfilSaudeControl
 from control.usuario_control import UsuarioControl
 from entity.exceptions import PersistenciaError
 from infra.logging_adapter import LoggingAdapter
@@ -24,16 +26,22 @@ def selecionar_fabrica() -> FabricaRepositorios:
 def main():
     try:
         fabrica = selecionar_fabrica()
+        logger = LoggingAdapter()
         control = UsuarioControl(
             repositorio=fabrica.criar_repositorio_usuarios(),
-            logger=LoggingAdapter(),
+            logger=logger,
             repositorio_acessos=fabrica.criar_repositorio_acessos(),
+        )
+        perfil_control = PerfilSaudeControl(
+            usuario_control=control,
+            repositorio=fabrica.criar_repositorio_perfis_saude(),
+            logger=logger,
         )
     except PersistenciaError as erro:
         print(f"Erro ao inicializar o armazenamento: {erro}")
         return
 
-    view = UsuarioView(control)
+    view = UsuarioView(control, PerfilSaudeView(perfil_control))
     view.exibir_menu()
 
 

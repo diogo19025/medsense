@@ -108,6 +108,10 @@ class UsuarioControl:
         # devolde explicitamente uma lista de usuários, mostrando na definição ao usar a função
         return self._collection.listar_todos()
 
+    # Busca um usuário cadastrado pelo email. Retorna None se não encontrado.
+    def buscar_usuario_por_email(self, email: str) -> Usuario | None:
+        return self._collection.buscar_por_email(email)
+
     def adicionar_responsavel_familiar(self, dados: dict) -> None:
         """Cria um novo usuário familiar responsavel,
         recebe um dicionario de dados empacota e adiciona,
