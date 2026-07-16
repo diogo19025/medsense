@@ -1,3 +1,5 @@
+from boundary.perfil_saude_view import PerfilSaudeView
+from control.perfil_saude_control import PerfilSaudeControl
 from control.usuario_control import UsuarioControl
 from entity.exceptions import PersistenciaError, ValidacaoError, SenhaInvalidaError, LoginInvalidoError
 
@@ -8,8 +10,17 @@ class UsuarioView:
     Responsável apenas por entrada e saída de dados.
     """
 
-    def __init__(self, control: UsuarioControl | None = None):
+    def __init__(
+        self,
+        control: UsuarioControl | None = None,
+        perfil_saude_view: PerfilSaudeView | None = None,
+    ):
         self._control = control if control is not None else UsuarioControl()
+        self._perfil_saude_view = (
+            perfil_saude_view
+            if perfil_saude_view is not None
+            else PerfilSaudeView(PerfilSaudeControl(self._control))
+        )
 
     def _coletar_dados_base(self) -> dict:
         """Coleta dados comuns a todos os tipos de usuário."""
@@ -111,6 +122,7 @@ class UsuarioView:
             print("  [3] Listar todos os usuários")
             print("  [4] Registrar acesso de usuário")
             print("  [5] Gerar relatório de acessos")
+            print("  [6] Gerenciar perfis de saúde")
             print("  [0] Sair")
 
             escolha = input("\nEscolha uma opção: ").strip()
@@ -125,6 +137,8 @@ class UsuarioView:
                 self._registrar_acesso()
             elif escolha == "5":
                 self._gerar_relatorio_acessos()
+            elif escolha == "6":
+                self._perfil_saude_view.exibir_menu()
             elif escolha == "0":
                 print("Encerrando o sistema.")
                 break
