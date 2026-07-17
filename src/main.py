@@ -1,5 +1,6 @@
 from boundary.perfil_saude_view import PerfilSaudeView
 from boundary.usuario_view import UsuarioView
+from control.facade_singleton_controller import FacadeSingletonController
 from control.perfil_saude_control import PerfilSaudeControl
 from control.usuario_control import UsuarioControl
 from entity.exceptions import PersistenciaError
@@ -27,13 +28,13 @@ def main():
     try:
         fabrica = selecionar_fabrica()
         logger = LoggingAdapter()
-        control = UsuarioControl(
+        usuario_control = UsuarioControl(
             repositorio=fabrica.criar_repositorio_usuarios(),
             logger=logger,
             repositorio_acessos=fabrica.criar_repositorio_acessos(),
         )
         perfil_control = PerfilSaudeControl(
-            usuario_control=control,
+            usuario_control=usuario_control,
             repositorio=fabrica.criar_repositorio_perfis_saude(),
             logger=logger,
         )
@@ -41,7 +42,9 @@ def main():
         print(f"Erro ao inicializar o armazenamento: {erro}")
         return
 
-    view = UsuarioView(control, PerfilSaudeView(perfil_control))
+    facade = FacadeSingletonController.obter_instancia(usuario_control, perfil_control)
+
+    view = UsuarioView(facade, PerfilSaudeView(perfil_control))
     view.exibir_menu()
 
 
