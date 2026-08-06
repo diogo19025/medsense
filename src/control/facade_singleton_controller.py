@@ -4,6 +4,7 @@ from control.comandos_perfil_saude import (
     RemoverPerfilSaudeCommand,
 )
 from control.executor_comandos import ExecutorComandos
+from control.historico_perfil_saude import HistoricoPerfilSaude
 from control.perfil_saude_control import PerfilSaudeControl
 from control.usuario_control import UsuarioControl
 from entity.perfil_saude import PerfilSaude
@@ -33,6 +34,7 @@ class FacadeSingletonController:
         self._usuario_control = usuario_control
         self._perfil_saude_control = perfil_saude_control
         self._executor_comandos = ExecutorComandos()
+        self._historico_perfil_saude = HistoricoPerfilSaude()
 
     # Devolve a única instância da fachada, criando-a na primeira chamada.
     # Chamadas seguintes ignoram os argumentos e reaproveitam a instância
@@ -105,13 +107,22 @@ class FacadeSingletonController:
 
     def atualizar_perfil_saude(self, email: str, dados: dict) -> PerfilSaude:
         comando = AtualizarPerfilSaudeCommand(
-            self._perfil_saude_control, email, dados
+            self._perfil_saude_control,
+            self._historico_perfil_saude,
+            email,
+            dados,
         )
         return self._executor_comandos.executar(comando)
 
     def remover_perfil_saude(self, email: str) -> None:
         comando = RemoverPerfilSaudeCommand(self._perfil_saude_control, email)
         self._executor_comandos.executar(comando)
+
+    def desfazer_ultima_atualizacao_perfil(self) -> PerfilSaude:
+        memento = self._historico_perfil_saude.recuperar()
+        perfil = self._perfil_saude_control.restaurar_perfil(memento)
+        self._historico_perfil_saude.limpar()
+        return perfil
 
     # ----- Consulta agregada -----
 
