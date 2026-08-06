@@ -3,6 +3,7 @@ from collection.repositorio_perfil_saude import RepositorioPerfilSaude
 from control.usuario_control import UsuarioControl
 from entity.familiar_paciente import FamiliarPaciente
 from entity.perfil_saude import PerfilSaude
+from entity.perfil_saude_memento import PerfilSaudeMemento
 from entity.usuario import Usuario
 from infra.logger import Logger, LoggerNulo
 
@@ -129,6 +130,22 @@ class PerfilSaudeControl:
             f"perfil de saude de '{paciente.login}'",
         )
         self._logger.info(f"Perfil de saude removido: {paciente.login}")
+
+    def restaurar_perfil(self, memento: PerfilSaudeMemento) -> PerfilSaude:
+        """Restaura e persiste um estado anterior, com rollback em falha."""
+        perfil = self._collection.buscar_por_usuario(memento.usuario_id)
+        if perfil is None:
+            raise ValueError(
+                "O perfil de saude da ultima atualizacao nao existe mais."
+            )
+        estado_atual = perfil.criar_memento()
+        perfil.restaurar(memento)
+        self._espelhar_no_repositorio(
+            lambda: perfil.restaurar(estado_atual),
+            f"restauracao do perfil de saude '{perfil.id}'",
+        )
+        self._logger.info(f"Atualizacao de perfil desfeita: {perfil.id}")
+        return perfil
 
     # Busca o perfil do paciente, exigindo que ele exista.
     def _exigir_perfil(self, paciente: Usuario) -> PerfilSaude:

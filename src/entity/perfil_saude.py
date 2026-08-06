@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from uuid import uuid4
 
+from entity.perfil_saude_memento import PerfilSaudeMemento
 from entity.validador_perfil_saude import ValidadorPerfilSaude
 
 
@@ -27,6 +28,30 @@ class PerfilSaude:
         self.tipo_sanguineo = self.tipo_sanguineo.strip().upper()
         ValidadorPerfilSaude.validar_usuario_id(self.usuario_id)
         ValidadorPerfilSaude.validar_tipo_sanguineo(self.tipo_sanguineo)
+
+    def criar_memento(self) -> PerfilSaudeMemento:
+        """Cria uma cópia imutável do estado clínico e da identidade."""
+        return PerfilSaudeMemento(
+            id=self.id,
+            usuario_id=self.usuario_id,
+            tipo_sanguineo=self.tipo_sanguineo,
+            alergias=tuple(self.alergias),
+            condicoes_cronicas=tuple(self.condicoes_cronicas),
+            medicamentos_continuos=tuple(self.medicamentos_continuos),
+            observacoes=self.observacoes,
+        )
+
+    def restaurar(self, memento: PerfilSaudeMemento) -> None:
+        """Restaura um retrato deste perfil usando novas listas mutáveis."""
+        if self.id != memento.id or self.usuario_id != memento.usuario_id:
+            raise ValueError("O memento pertence a outro perfil de saude.")
+        self.id = memento.id
+        self.usuario_id = memento.usuario_id
+        self.tipo_sanguineo = memento.tipo_sanguineo
+        self.alergias = list(memento.alergias)
+        self.condicoes_cronicas = list(memento.condicoes_cronicas)
+        self.medicamentos_continuos = list(memento.medicamentos_continuos)
+        self.observacoes = memento.observacoes
 
     # Exibe "-" no lugar de listas vazias para leitura na CLI.
     @staticmethod
