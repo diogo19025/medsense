@@ -1,4 +1,4 @@
-# ADR-0007: Builder para o resumo de saúde
+# ADR-0008: Builder para o resumo de saúde
 
 - Status: Aceito
 - Data: 2026-08-06
