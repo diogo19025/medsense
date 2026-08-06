@@ -3,6 +3,7 @@ import sys
 import unittest
 from dataclasses import FrozenInstanceError
 from datetime import datetime
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
@@ -304,6 +305,38 @@ class DiretorResumoSaudeTest(unittest.TestCase):
 
         self.assertIn(SECAO_VACINAS, primeiro.secoes)
         self.assertNotIn(SECAO_VACINAS, segundo.secoes)
+
+    def test_deve_rejeitar_perfil_de_outro_usuario_nas_duas_receitas(self):
+        perfil_de_outro_usuario = _perfil(usuario_id="outro-usuario")
+        receitas = (
+            self._diretor.construir_resumo_basico,
+            self._diretor.construir_resumo_completo,
+        )
+
+        for receita in receitas:
+            with self.subTest(receita=receita.__name__):
+                with self.assertRaisesRegex(ValueError, "nao pertence"):
+                    receita(self._usuario, perfil_de_outro_usuario)
+
+    def test_rodape_e_produto_devem_usar_o_mesmo_momento(self):
+        momento = datetime(2026, 8, 6, 14, 30, 45)
+
+        for builder_class in (ResumoSaudeTextoBuilder, ResumoSaudeHTMLBuilder):
+            with self.subTest(builder=builder_class.__name__):
+                with patch(
+                    "control.resumo_saude_builder.datetime"
+                ) as datetime_mock:
+                    datetime_mock.now.return_value = momento
+                    diretor = DiretorResumoSaude(builder_class())
+                    resumo = diretor.construir_resumo_basico(
+                        self._usuario, self._perfil
+                    )
+
+                self.assertEqual(resumo.gerado_em, momento)
+                self.assertIn(
+                    momento.strftime("%d/%m/%Y %H:%M:%S"),
+                    resumo.conteudo,
+                )
 
 
 if __name__ == "__main__":

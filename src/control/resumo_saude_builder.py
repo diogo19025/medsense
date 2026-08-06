@@ -48,6 +48,7 @@ class ResumoSaudeBuilder(ABC):
         self._usuario_id = ""
         self._partes: list[str] = []
         self._secoes: list[str] = []
+        self._gerado_em = datetime.now()
         return self
 
     # -------- Produto em construção --------
@@ -60,6 +61,7 @@ class ResumoSaudeBuilder(ABC):
             formato=self.formato,
             conteudo=self._montar(self._partes),
             secoes=tuple(self._secoes),
+            gerado_em=self._gerado_em,
         )
         self.reiniciar()
         return resumo
@@ -190,7 +192,7 @@ class ResumoSaudeTextoBuilder(ResumoSaudeBuilder):
 
     def construir_rodape(self) -> "ResumoSaudeBuilder":
         return self._adicionar_parte(
-            f"Gerado em {self._formatar_momento(datetime.now())}"
+            f"Gerado em {self._formatar_momento(self._gerado_em)}"
         )
 
     def _montar(self, partes: list[str]) -> str:
@@ -263,7 +265,7 @@ class ResumoSaudeHTMLBuilder(ResumoSaudeBuilder):
 
     def construir_rodape(self) -> "ResumoSaudeBuilder":
         return self._adicionar_parte(
-            f"<footer>Gerado em {self._formatar_momento(datetime.now())}</footer>"
+            f"<footer>Gerado em {self._formatar_momento(self._gerado_em)}</footer>"
         )
 
     def _montar(self, partes: list[str]) -> str:
@@ -308,6 +310,7 @@ class DiretorResumoSaude:
     def construir_resumo_basico(
         self, usuario: Usuario, perfil: PerfilSaude | None
     ) -> ResumoSaude:
+        self._validar_vinculo(usuario, perfil)
         self._builder.reiniciar()
         self._builder.construir_cabecalho()
         self._builder.construir_dados_usuario(usuario)
@@ -327,6 +330,7 @@ class DiretorResumoSaude:
         consultas: list[str] | None = None,
         documentos: list[str] | None = None,
     ) -> ResumoSaude:
+        self._validar_vinculo(usuario, perfil)
         self._builder.reiniciar()
         self._builder.construir_cabecalho()
         self._builder.construir_dados_usuario(usuario)
@@ -337,3 +341,12 @@ class DiretorResumoSaude:
         self._builder.construir_documentos(documentos or [])
         self._builder.construir_rodape()
         return self._builder.obter_resultado()
+
+    @staticmethod
+    def _validar_vinculo(
+        usuario: Usuario, perfil: PerfilSaude | None
+    ) -> None:
+        if perfil is not None and perfil.usuario_id != usuario.id:
+            raise ValueError(
+                "O perfil de saude nao pertence ao usuario informado."
+            )
