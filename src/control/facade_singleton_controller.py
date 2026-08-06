@@ -1,3 +1,9 @@
+from control.comandos_perfil_saude import (
+    AtualizarPerfilSaudeCommand,
+    CadastrarPerfilSaudeCommand,
+    RemoverPerfilSaudeCommand,
+)
+from control.executor_comandos import ExecutorComandos
 from control.perfil_saude_control import PerfilSaudeControl
 from control.usuario_control import UsuarioControl
 from entity.perfil_saude import PerfilSaude
@@ -26,6 +32,7 @@ class FacadeSingletonController:
     ):
         self._usuario_control = usuario_control
         self._perfil_saude_control = perfil_saude_control
+        self._executor_comandos = ExecutorComandos()
 
     # Devolve a única instância da fachada, criando-a na primeira chamada.
     # Chamadas seguintes ignoram os argumentos e reaproveitam a instância
@@ -85,7 +92,10 @@ class FacadeSingletonController:
     # ----- Perfis de saúde (delega para PerfilSaudeControl) -----
 
     def cadastrar_perfil_saude(self, email: str, dados: dict) -> PerfilSaude:
-        return self._perfil_saude_control.cadastrar_perfil(email, dados)
+        comando = CadastrarPerfilSaudeCommand(
+            self._perfil_saude_control, email, dados
+        )
+        return self._executor_comandos.executar(comando)
 
     def buscar_perfil_saude(self, email: str) -> PerfilSaude | None:
         return self._perfil_saude_control.buscar_perfil(email)
@@ -94,10 +104,14 @@ class FacadeSingletonController:
         return self._perfil_saude_control.listar_perfis()
 
     def atualizar_perfil_saude(self, email: str, dados: dict) -> PerfilSaude:
-        return self._perfil_saude_control.atualizar_perfil(email, dados)
+        comando = AtualizarPerfilSaudeCommand(
+            self._perfil_saude_control, email, dados
+        )
+        return self._executor_comandos.executar(comando)
 
     def remover_perfil_saude(self, email: str) -> None:
-        self._perfil_saude_control.remover_perfil(email)
+        comando = RemoverPerfilSaudeCommand(self._perfil_saude_control, email)
+        self._executor_comandos.executar(comando)
 
     # ----- Consulta agregada -----
 
