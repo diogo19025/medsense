@@ -44,10 +44,8 @@ class UsuarioView:
         self._perfil_saude_view = (
             perfil_saude_view
             if perfil_saude_view is not None
-            # A facade expõe buscar_usuario_por_email, então serve como
-            # o "usuario_control" que o PerfilSaudeControl espera —
-            # mantém os dois usando a mesma base de usuários.
-            else PerfilSaudeView(PerfilSaudeControl(self._facade))
+            # Preserva o histórico de comandos usado para desfazer alterações.
+            else PerfilSaudeView(self._facade)
         )
         self._lembrete_view = LembreteView(self._facade)
 

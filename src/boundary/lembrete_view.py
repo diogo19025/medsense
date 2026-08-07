@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import uuid4
 
 from control.facade_singleton_controller import FacadeSingletonController
@@ -25,6 +26,15 @@ class LembreteView:
     def __init__(self, facade: FacadeSingletonController):
         self._facade = facade
 
+    @staticmethod
+    def _converter_data_hora(valor: str) -> datetime:
+        try:
+            return datetime.strptime(valor.strip(), "%d/%m/%Y %H:%M")
+        except ValueError as erro:
+            raise ValueError(
+                "Data e hora invalidas. Use o formato DD/MM/AAAA HH:MM."
+            ) from erro
+
     def _escolher_tipo(self) -> TipoLembrete:
         print("  [1] Medicamento")
         print("  [2] Consulta")
@@ -41,14 +51,14 @@ class LembreteView:
         data_hora = input("Data e hora (ex.: 10/07/2026 08:00): ")
         tipo = self._escolher_tipo()
 
-        dados = {
-            "id_lembrete": str(uuid4()),
-            "titulo": titulo,
-            "descricao": descricao,
-            "data_hora": data_hora,
-            "tipo": tipo,
-        }
         try:
+            dados = {
+                "id_lembrete": str(uuid4()),
+                "titulo": titulo,
+                "descricao": descricao,
+                "data_hora": self._converter_data_hora(data_hora),
+                "tipo": tipo,
+            }
             lembrete = self._facade.criar_lembrete(email, dados)
             print(f"Lembrete criado com sucesso! ID: {lembrete.id_lembrete}")
         except (ValidacaoError, ValueError) as e:
@@ -65,12 +75,12 @@ class LembreteView:
         if descricao:
             dados["descricao"] = descricao
         data_hora = input("Nova data e hora (vazio para manter): ").strip()
-        if data_hora:
-            dados["data_hora"] = data_hora
         if input("Alterar tipo? [s/N]: ").strip().lower() == "s":
             dados["tipo"] = self._escolher_tipo()
 
         try:
+            if data_hora:
+                dados["data_hora"] = self._converter_data_hora(data_hora)
             self._facade.atualizar_lembrete(id_lembrete, dados)
             print("Lembrete atualizado com sucesso!")
         except (ValidacaoError, ValueError) as e:

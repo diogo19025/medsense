@@ -16,7 +16,9 @@ from control.comandos_perfil_saude import (
 from control.executor_comandos import ExecutorComandos
 from control.facade_singleton_controller import FacadeSingletonController
 from control.historico_perfil_saude import HistoricoPerfilSaude
+from control.lembrete_control import LembreteControl
 from control.perfil_saude_control import PerfilSaudeControl
+from control.resumo_saude_builder import DiretorResumoSaude, ResumoSaudeTextoBuilder
 from control.usuario_control import UsuarioControl
 from entity.exceptions import PersistenciaError
 from entity.perfil_saude import PerfilSaude
@@ -236,8 +238,13 @@ class DesfazerAtualizacaoPerfilTest(unittest.TestCase):
         self.perfil_control = PerfilSaudeControl(
             self.usuario_control, self.repositorio
         )
+        self.lembrete_control = LembreteControl(self.usuario_control)
+        self.diretor_resumo_saude = DiretorResumoSaude(ResumoSaudeTextoBuilder())
         self.facade = FacadeSingletonController.obter_instancia(
-            self.usuario_control, self.perfil_control
+            self.usuario_control,
+            self.perfil_control,
+            self.lembrete_control,
+            self.diretor_resumo_saude,
         )
         self.original = self.facade.cadastrar_perfil_saude(
             EMAIL_PACIENTE, _dados_perfil()

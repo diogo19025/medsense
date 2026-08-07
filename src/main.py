@@ -2,6 +2,7 @@ from boundary.perfil_saude_view import PerfilSaudeView
 from boundary.usuario_view import UsuarioView
 from control.facade_singleton_controller import FacadeSingletonController
 from control.lembrete_control import LembreteControl
+from control.observadores_lembrete import NotificadorConsole
 from control.perfil_saude_control import PerfilSaudeControl
 from control.resumo_saude_builder import DiretorResumoSaude, ResumoSaudeTextoBuilder
 from control.usuario_control import UsuarioControl
@@ -45,6 +46,7 @@ def main():
         return
 
     lembrete_control = LembreteControl(usuario_control, logger=logger)
+    lembrete_control.anexar_observador(NotificadorConsole())
 
     # O diretor começa com o builder de texto; a facade permite trocar
     # para HTML sob demanda (definir_formato_resumo_saude), sem que a
@@ -58,7 +60,7 @@ def main():
         diretor_resumo_saude,
     )
 
-    view = UsuarioView(facade, PerfilSaudeView(perfil_control))
+    view = UsuarioView(facade, PerfilSaudeView(facade))
     view.exibir_menu()
 
 
