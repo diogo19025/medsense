@@ -1,6 +1,13 @@
+from boundary.lembrete_view import LembreteView
 from boundary.perfil_saude_view import PerfilSaudeView
 from control.facade_singleton_controller import FacadeSingletonController
+from control.lembrete_control import LembreteControl
 from control.perfil_saude_control import PerfilSaudeControl
+from control.resumo_saude_builder import (
+    DiretorResumoSaude,
+    ResumoSaudeHTMLBuilder,
+    ResumoSaudeTextoBuilder,
+)
 from control.usuario_control import UsuarioControl
 from entity.exceptions import PersistenciaError, ValidacaoError, SenhaInvalidaError, LoginInvalidoError
 
@@ -11,8 +18,8 @@ class UsuarioView:
     Responsável apenas por entrada e saída de dados.
 
     Fala com o sistema através da FacadeSingletonController: não conhece
-    UsuarioControl nem PerfilSaudeControl diretamente, apenas a fachada
-    que os integra.
+    UsuarioControl, PerfilSaudeControl nem LembreteControl diretamente,
+    apenas a fachada que os integra.
     """
 
     def __init__(
@@ -25,8 +32,13 @@ class UsuarioView:
         else:
             usuario_control = UsuarioControl()
             perfil_control = PerfilSaudeControl(usuario_control)
+            lembrete_control = LembreteControl(usuario_control)
+            diretor_resumo_saude = DiretorResumoSaude(ResumoSaudeTextoBuilder())
             self._facade = FacadeSingletonController.obter_instancia(
-                usuario_control, perfil_control
+                usuario_control,
+                perfil_control,
+                lembrete_control,
+                diretor_resumo_saude,
             )
 
         self._perfil_saude_view = (
@@ -37,6 +49,7 @@ class UsuarioView:
             # mantém os dois usando a mesma base de usuários.
             else PerfilSaudeView(PerfilSaudeControl(self._facade))
         )
+        self._lembrete_view = LembreteView(self._facade)
 
     def _coletar_dados_base(self) -> dict:
         """Coleta dados comuns a todos os tipos de usuário."""
@@ -132,7 +145,45 @@ class UsuarioView:
     def _exibir_quantidade_total_entidades(self) -> None:
         print("\n--- Total de Entidades Cadastradas ---")
         total = self._facade.quantidade_total_entidades()
-        print(f"Usuários + perfis de saúde cadastrados: {total}")
+        print(f"Usuários + perfis + lembretes cadastrados: {total}")
+
+    def _desfazer_atualizacao_perfil(self) -> None:
+        print("\n--- Desfazer Última Atualização de Perfil ---")
+        try:
+            perfil = self._facade.desfazer_ultima_atualizacao_perfil()
+            print("Última atualização desfeita com sucesso!")
+            print(perfil)
+        except ValueError as e:
+            print(f"Erro: {e}")
+
+    def _gerar_resumo_saude(self) -> None:
+        print("\n--- Gerar Resumo de Saúde ---")
+        email = input("Email do paciente: ")
+        print("  [1] Texto")
+        print("  [2] HTML")
+        escolha = input("Escolha o formato: ").strip()
+
+        if escolha == "2":
+            self._facade.definir_formato_resumo_saude(ResumoSaudeHTMLBuilder())
+            extensao = "html"
+        else:
+            self._facade.definir_formato_resumo_saude(ResumoSaudeTextoBuilder())
+            extensao = "txt"
+
+        try:
+            resumo = self._facade.gerar_resumo_saude_basico(email)
+        except ValueError as e:
+            print(f"Erro: {e}")
+            return
+
+        caminho = f"resumo_saude.{extensao}"
+        try:
+            with open(caminho, "w", encoding="utf-8") as arquivo:
+                arquivo.write(resumo.conteudo)
+            print(f"Resumo gerado em '{caminho}'.")
+        except OSError as e:
+            print(f"Erro ao gravar o resumo: {e}")
+        print(resumo.conteudo)
 
     def exibir_menu(self) -> None:
         """Exibe o menu principal e processa a escolha do usuário."""
@@ -145,6 +196,9 @@ class UsuarioView:
             print("  [5] Gerar relatório de acessos")
             print("  [6] Gerenciar perfis de saúde")
             print("  [7] Ver total de entidades cadastradas")
+            print("  [8] Desfazer última atualização de perfil")
+            print("  [9] Gerenciar lembretes de saúde")
+            print("  [10] Gerar resumo de saúde")
             print("  [0] Sair")
 
             escolha = input("\nEscolha uma opção: ").strip()
@@ -163,6 +217,12 @@ class UsuarioView:
                 self._perfil_saude_view.exibir_menu()
             elif escolha == "7":
                 self._exibir_quantidade_total_entidades()
+            elif escolha == "8":
+                self._desfazer_atualizacao_perfil()
+            elif escolha == "9":
+                self._lembrete_view.exibir_menu()
+            elif escolha == "10":
+                self._gerar_resumo_saude()
             elif escolha == "0":
                 print("Encerrando o sistema.")
                 break
