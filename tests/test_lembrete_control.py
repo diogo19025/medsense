@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from control.lembrete_control import LembreteControl
 from control.observadores_lembrete import ObservadorLembrete
 from control.usuario_control import UsuarioControl
-from entity.lembrete_saude import LembreteSaude, TipoLembrete
+from entity.lembrete_saude import LembreteSaude, SituacaoLembrete, TipoLembrete
 
 
 # ESPIÃO PARA TESTAR O OBSERVER
@@ -90,7 +90,7 @@ class LembreteControlObserverTest(unittest.TestCase):
         self.assertEqual(len(self._espiao.notificacoes), 1)
         notificado, acao = self._espiao.notificacoes[0]
         self.assertEqual(acao, "concluído")
-        self.assertTrue(notificado.situacao) # Verifica se está concluído
+        self.assertEqual(notificado.situacao, SituacaoLembrete.CONCLUIDO)
 
     def test_nao_deve_notificar_observador_desanexado(self):
         self._control.anexar_observador(self._espiao)

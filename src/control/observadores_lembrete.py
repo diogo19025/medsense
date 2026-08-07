@@ -42,7 +42,7 @@ class RegistroNotificacaoObserver(ObservadorLembrete):
     def notificar(self, lembrete: LembreteSaude, acao: str) -> None:
         # usa o método info do contrato Logger
         mensagem = (
-            f"Evento de Lembrete: Ação '{acao}' executada no lembrete"
+            f"Evento de Lembrete: Ação '{acao}' executada no lembrete "
             f"ID '{lembrete.id_lembrete}' do usuário '{lembrete.usuario_id}'."
         )
         self._logger.info(mensagem)

@@ -137,7 +137,9 @@ class FacadeSingletonController:
         return self._executor_comandos.executar(comando)
 
     def remover_perfil_saude(self, email: str) -> None:
-        comando = RemoverPerfilSaudeCommand(self._perfil_saude_control, email)
+        comando = RemoverPerfilSaudeCommand(
+            self._perfil_saude_control, self._historico_perfil_saude, email
+        )
         self._executor_comandos.executar(comando)
 
     # Desfaz somente a última atualização de perfil de saúde executada

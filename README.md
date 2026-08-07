@@ -27,7 +27,7 @@ O MedSense permite que clínicas e hospitais gerenciem:
 - **Lembretes de saúde** — medicamentos, consultas e exames, com notificação automática de observadores a cada mudança de estado.
 - **Resumos de saúde** — documentos gerados em texto ou HTML, reunindo dados do usuário, perfil e seções opcionais.
 
-O sistema pode persistir dados em memória RAM, arquivo binário ou banco SQLite, escolhido no início da execução.
+Usuários, acessos e perfis de saúde podem ser persistidos em memória RAM, arquivo binário ou banco SQLite, escolhido no início da execução. Lembretes e resumos não têm repositório: os lembretes vivem apenas na coleção em RAM durante a execução, e os resumos são gerados sob demanda em arquivo (`resumo_saude.txt`/`.html`).
 
 ## Arquitetura
 
@@ -296,4 +296,4 @@ medsense/
 
 ## Contribuição
 
-As práticas de branches, commits e pull requests do projeto estão documentadas em [`CONTRIBUTING.md`](CONTRIBUTING.md).
+As práticas de branches, commits e pull requests do projeto estão documentadas em [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md).

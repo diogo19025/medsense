@@ -44,11 +44,21 @@ class AtualizarPerfilSaudeCommand(Comando):
 
 
 class RemoverPerfilSaudeCommand(Comando):
-    """Encapsula a remoção e delega as regras ao receiver."""
+    """Encapsula a remoção, delega ao receiver e descarta o retrato."""
 
-    def __init__(self, receiver: PerfilSaudeControl, email: str):
+    def __init__(
+        self,
+        receiver: PerfilSaudeControl,
+        historico: HistoricoPerfilSaude,
+        email: str,
+    ):
         self._receiver = receiver
+        self._historico = historico
         self._email = email
 
     def executar(self) -> None:
         self._receiver.remover_perfil(self._email)
+        # Sem o Originator não há o que restaurar. Manter o retrato deixaria
+        # o desfazer preso num erro permanente, inclusive depois de o
+        # paciente cadastrar um perfil novo.
+        self._historico.limpar()

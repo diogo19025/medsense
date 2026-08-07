@@ -106,11 +106,25 @@ class CommandPerfilSaudeTest(unittest.TestCase):
         self.assertIs(resultado, atualizado)
 
     def test_deve_executar_comando_de_remocao_no_receiver(self):
-        comando = RemoverPerfilSaudeCommand(self.receiver, EMAIL_PACIENTE)
+        historico = HistoricoPerfilSaude()
+        comando = RemoverPerfilSaudeCommand(
+            self.receiver, historico, EMAIL_PACIENTE
+        )
 
         comando.executar()
 
         self.receiver.remover_perfil.assert_called_once_with(EMAIL_PACIENTE)
+
+    def test_remocao_deve_descartar_o_memento_da_ultima_atualizacao(self):
+        historico = HistoricoPerfilSaude()
+        historico.salvar(_perfil().criar_memento())
+        comando = RemoverPerfilSaudeCommand(
+            self.receiver, historico, EMAIL_PACIENTE
+        )
+
+        comando.executar()
+
+        self.assertFalse(historico.possui_estado())
 
     def test_executor_deve_acionar_o_comando_recebido(self):
         comando = Mock(spec=Comando)

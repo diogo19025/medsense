@@ -1,10 +1,7 @@
-# 7. Uso do Padrão Observer para Notificações de Lembretes
+# ADR-0009: Observer para notificações de lembretes
 
-Data: 2026-08-06
-
-## Status
-
-Aceito
+- Status: Aceito
+- Data: 2026-08-06
 
 ## Contexto
 
