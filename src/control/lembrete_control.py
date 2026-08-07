@@ -102,3 +102,13 @@ class LembreteControl:
         self._collection.atualizar(lembrete)
         self._notificar_observadores(lembrete, "concluído")
         self._logger.info(f"Lembrete concluido: {id_lembrete}")
+
+    # retorna uma cópia da lista com todos os lembretes cadastrados.
+    def listar_lembretes(self) -> list[LembreteSaude]:
+        return self._collection.listar_todos()
+
+    # retorna os lembretes do usuário identificado pelo email.
+    # lança ValueError se o email não existe.
+    def listar_lembretes_por_usuario(self, email: str) -> list[LembreteSaude]:
+        usuario = self._buscar_usuario(email)
+        return self._collection.listar_por_usuario(usuario.id)
