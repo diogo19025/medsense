@@ -73,10 +73,15 @@ class PerfilSaudeView:
     def _atualizar_perfil(self) -> None:
         print("\n--- Atualizar Perfil de Saúde ---")
         email = input("Email do paciente: ")
+        dados = self._coletar_dados_atualizacao()
+        # Uma atualização sem campos não muda nada, mas guardaria um memento
+        # e ocuparia a única vaga de desfazer com uma alteração inexistente.
+        if not dados:
+            print("Nenhum campo informado. O perfil de saúde não foi alterado.")
+            return
+
         try:
-            perfil = self._facade.atualizar_perfil_saude(
-                email, self._coletar_dados_atualizacao()
-            )
+            perfil = self._facade.atualizar_perfil_saude(email, dados)
             print("Perfil de saúde atualizado com sucesso!")
             print(perfil)
         except (ValidacaoError, ValueError) as e:
