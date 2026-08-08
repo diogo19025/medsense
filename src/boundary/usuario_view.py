@@ -1,3 +1,4 @@
+from boundary.entrada import ler_lista
 from boundary.lembrete_view import LembreteView
 from boundary.perfil_saude_view import PerfilSaudeView
 from control.facade_singleton_controller import FacadeSingletonController
@@ -154,22 +155,39 @@ class UsuarioView:
         except ValueError as e:
             print(f"Erro: {e}")
 
+    # Escolhe o builder do diretor e devolve a extensão do arquivo gerado.
+    def _escolher_formato_resumo(self) -> str:
+        print("  [1] Texto")
+        print("  [2] HTML")
+        if input("Escolha o formato: ").strip() == "2":
+            self._facade.definir_formato_resumo_saude(ResumoSaudeHTMLBuilder())
+            return "html"
+        self._facade.definir_formato_resumo_saude(ResumoSaudeTextoBuilder())
+        return "txt"
+
+    # Monta o resumo completo (ADR-0008): a receita básica acrescida das
+    # seções opcionais informadas. Cada seção sem itens é omitida.
+    def _gerar_resumo_saude_completo(self, email: str):
+        return self._facade.gerar_resumo_saude_completo(
+            email,
+            medicamentos=ler_lista("Medicamentos"),
+            vacinas=ler_lista("Vacinas"),
+            consultas=ler_lista("Consultas"),
+            documentos=ler_lista("Documentos"),
+        )
+
     def _gerar_resumo_saude(self) -> None:
         print("\n--- Gerar Resumo de Saúde ---")
         email = input("Email do paciente: ")
-        print("  [1] Texto")
-        print("  [2] HTML")
-        escolha = input("Escolha o formato: ").strip()
-
-        if escolha == "2":
-            self._facade.definir_formato_resumo_saude(ResumoSaudeHTMLBuilder())
-            extensao = "html"
-        else:
-            self._facade.definir_formato_resumo_saude(ResumoSaudeTextoBuilder())
-            extensao = "txt"
+        extensao = self._escolher_formato_resumo()
+        completo = input("Incluir seções opcionais? [s/N]: ").strip().lower() == "s"
 
         try:
-            resumo = self._facade.gerar_resumo_saude_basico(email)
+            resumo = (
+                self._gerar_resumo_saude_completo(email)
+                if completo
+                else self._facade.gerar_resumo_saude_basico(email)
+            )
         except ValueError as e:
             print(f"Erro: {e}")
             return
