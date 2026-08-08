@@ -129,7 +129,11 @@ class UsuarioView:
         print("  [2] HTML")
         escolha = input("Escolha o formato: ").strip()
         formato = "html" if escolha == "2" else "texto"
-        conteudo = self._facade.gerar_relatorio_acessos(formato)
+        try:
+            conteudo = self._facade.gerar_relatorio_acessos(formato)
+        except ValueError as e:
+            print(f"Erro: {e}")
+            return
 
         extensao = "html" if formato == "html" else "txt"
         caminho = f"relatorio_acessos.{extensao}"
