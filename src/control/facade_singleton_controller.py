@@ -161,6 +161,12 @@ class FacadeSingletonController:
     def concluir_lembrete(self, id_lembrete: str) -> None:
         self._lembrete_control.concluir_lembrete(id_lembrete)
 
+    def cancelar_lembrete(self, id_lembrete: str) -> None:
+        self._lembrete_control.cancelar_lembrete(id_lembrete)
+
+    def remover_lembrete(self, id_lembrete: str) -> None:
+        self._lembrete_control.remover_lembrete(id_lembrete)
+
     def listar_lembretes(self) -> list[LembreteSaude]:
         return self._lembrete_control.listar_lembretes()
 

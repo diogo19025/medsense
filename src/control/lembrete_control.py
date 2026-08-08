@@ -116,6 +116,23 @@ class LembreteControl:
         self._notificar_observadores(lembrete, "concluído")
         self._logger.info(f"Lembrete concluido: {id_lembrete}")
 
+    # marca o status do lembrete como cancelado e notifica observadores.
+    # lança ValueError se o lembrete não for encontrado.
+    def cancelar_lembrete(self, id_lembrete: str) -> None:
+        lembrete = self._exigir_lembrete(id_lembrete)
+        lembrete.cancelar()
+        self._collection.atualizar(lembrete)
+        self._notificar_observadores(lembrete, "cancelado")
+        self._logger.info(f"Lembrete cancelado: {id_lembrete}")
+
+    # retira o lembrete da coleção e notifica observadores.
+    # lança ValueError se o lembrete não for encontrado.
+    def remover_lembrete(self, id_lembrete: str) -> None:
+        lembrete = self._exigir_lembrete(id_lembrete)
+        self._collection.remover(lembrete)
+        self._notificar_observadores(lembrete, "removido")
+        self._logger.info(f"Lembrete removido: {id_lembrete}")
+
     # retorna uma cópia da lista com todos os lembretes cadastrados.
     def listar_lembretes(self) -> list[LembreteSaude]:
         return self._collection.listar_todos()

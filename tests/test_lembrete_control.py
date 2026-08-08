@@ -116,6 +116,36 @@ class LembreteControlObserverTest(unittest.TestCase):
         self.assertEqual(acao, "concluído")
         self.assertEqual(notificado.situacao, SituacaoLembrete.CONCLUIDO)
 
+    def test_deve_notificar_observador_no_cancelamento(self):
+        self._control.anexar_observador(self._espiao)
+        self._control.criar_lembrete(EMAIL_PACIENTE, _dados_lembrete())
+        self._espiao.notificacoes.clear()
+
+        self._control.cancelar_lembrete("L1")
+
+        notificado, acao = self._espiao.notificacoes[0]
+        self.assertEqual(acao, "cancelado")
+        self.assertEqual(notificado.situacao, SituacaoLembrete.CANCELADO)
+
+    def test_deve_notificar_observador_na_remocao(self):
+        self._control.anexar_observador(self._espiao)
+        self._control.criar_lembrete(EMAIL_PACIENTE, _dados_lembrete())
+        self._espiao.notificacoes.clear()
+
+        self._control.remover_lembrete("L1")
+
+        _, acao = self._espiao.notificacoes[0]
+        self.assertEqual(acao, "removido")
+        self.assertEqual(self._control.listar_lembretes(), [])
+
+    def test_deve_lancar_erro_ao_cancelar_lembrete_inexistente(self):
+        with self.assertRaisesRegex(ValueError, "nao foi encontrado|não foi encontrado"):
+            self._control.cancelar_lembrete("inexistente")
+
+    def test_deve_lancar_erro_ao_remover_lembrete_inexistente(self):
+        with self.assertRaisesRegex(ValueError, "nao foi encontrado|não foi encontrado"):
+            self._control.remover_lembrete("inexistente")
+
     def test_nao_deve_notificar_observador_desanexado(self):
         self._control.anexar_observador(self._espiao)
         self._control.desanexar_observador(self._espiao)
