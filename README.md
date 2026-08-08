@@ -24,7 +24,7 @@ O MedSense permite que clínicas e hospitais gerenciem:
 
 - **Usuários** — familiares de pacientes e responsáveis familiares, com cadastro, listagem e controle de acesso.
 - **Perfis de saúde** — tipo sanguíneo, alergias, condições crônicas e medicamentos contínuos, com histórico de alterações e possibilidade de desfazer a última atualização.
-- **Lembretes de saúde** — medicamentos, consultas e exames, com notificação automática de observadores a cada mudança de estado.
+- **Lembretes de saúde** — medicamentos, consultas e exames, com criação, atualização, conclusão, cancelamento e remoção, notificando os observadores a cada mudança de estado.
 - **Resumos de saúde** — documentos gerados em texto ou HTML, reunindo dados do usuário, perfil e seções opcionais.
 
 Usuários, acessos e perfis de saúde podem ser persistidos em memória RAM, arquivo binário ou banco SQLite, escolhido no início da execução. Lembretes e resumos não têm repositório: os lembretes vivem apenas na coleção em RAM durante a execução, e os resumos são gerados sob demanda em arquivo (`resumo_saude.txt`/`.html`).
@@ -190,6 +190,9 @@ classDiagram
         -_observadores List
         +anexar_observador(obs)
         +criar_lembrete(email, dados)
+        +concluir_lembrete(id)
+        +cancelar_lembrete(id)
+        +remover_lembrete(id)
         +listar_lembretes()
     }
 
@@ -223,6 +226,7 @@ classDiagram
     Comando <|.. RemoverPerfilSaudeCommand
     ExecutorComandos ..> Comando : executa
     AtualizarPerfilSaudeCommand ..> HistoricoPerfilSaude : salva memento
+    RemoverPerfilSaudeCommand ..> HistoricoPerfilSaude : descarta memento
     HistoricoPerfilSaude o-- PerfilSaudeMemento
     AtualizarPerfilSaudeCommand ..> PerfilSaudeControl
 
