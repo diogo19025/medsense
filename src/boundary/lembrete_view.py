@@ -119,9 +119,21 @@ class LembreteView:
 
     def _listar_lembretes(self) -> None:
         print("\n--- Lista de Lembretes ---")
-        lembretes = self._facade.listar_lembretes()
+        self._exibir(self._facade.listar_lembretes(), "Nenhum lembrete cadastrado.")
+
+    def _listar_lembretes_do_paciente(self) -> None:
+        print("\n--- Lembretes do Paciente ---")
+        email = input("Email do paciente: ")
+        try:
+            lembretes = self._facade.listar_lembretes_por_usuario(email)
+        except ValueError as e:
+            print(f"Erro: {e}")
+            return
+        self._exibir(lembretes, "O paciente não possui lembretes.")
+
+    def _exibir(self, lembretes: list[LembreteSaude], vazio: str) -> None:
         if not lembretes:
-            print("Nenhum lembrete cadastrado.")
+            print(vazio)
             return
         for lembrete in lembretes:
             print(self._formatar(lembrete))
@@ -147,6 +159,7 @@ class LembreteView:
             print("  [4] Cancelar lembrete")
             print("  [5] Remover lembrete")
             print("  [6] Listar todos os lembretes")
+            print("  [7] Listar lembretes de um paciente")
             print("  [0] Voltar ao menu principal")
 
             escolha = input("\nEscolha uma opção: ").strip()
@@ -163,6 +176,8 @@ class LembreteView:
                 self._remover_lembrete()
             elif escolha == "6":
                 self._listar_lembretes()
+            elif escolha == "7":
+                self._listar_lembretes_do_paciente()
             elif escolha == "0":
                 break
             else:
