@@ -60,6 +60,14 @@ O `AtualizarPerfilSaudeCommand` segue este fluxo:
 4. guarda o Memento somente depois que a atualização e a persistência terminam
    com sucesso.
 
+O `RemoverPerfilSaudeCommand` também recebe o Caretaker. Depois que a remoção é
+confirmada pelo Receiver, ele compara o `id` do perfil removido com o do retrato
+guardado e só descarta quando são o mesmo. Sem o Originator não há o que
+restaurar: manter o retrato deixaria o desfazer preso num erro de identidade
+pelo resto da execução, inclusive depois de o paciente cadastrar um perfil novo.
+A comparação é necessária porque o Caretaker é único para todo o sistema —
+remover o perfil de um paciente não pode apagar o desfazer pendente de outro.
+
 O Caretaker mantém uma única referência. Uma nova atualização bem-sucedida
 substitui o retrato anterior, pois o requisito permite desfazer somente a última
 atualização e não exige uma pilha de versões. Isso reduz estado e torna explícito
@@ -72,10 +80,11 @@ Memento e solicita ao `PerfilSaudeControl` que restaure e persista o perfil. O
 controle usa o mesmo mecanismo de espelhamento e rollback do ADR-0002: se a
 gravação falhar, restaura em RAM o estado que estava vigente antes da tentativa.
 
-O Caretaker só é limpo após a persistência bem-sucedida. Assim, uma falha mantém
-RAM e armazenamento durável no estado atualizado e permite repetir o desfazer.
-Depois de um desfazer concluído, uma nova tentativa produz um erro claro porque
-não há mais estado disponível.
+O Caretaker só é limpo após a persistência bem-sucedida — ou quando o perfil dono
+do retrato é removido, conforme descrito acima. Assim, uma falha de gravação
+mantém RAM e armazenamento durável no estado atualizado e permite repetir o
+desfazer. Depois de um desfazer concluído, uma nova tentativa produz um erro
+claro porque não há mais estado disponível.
 
 ## Impactos
 
@@ -86,6 +95,8 @@ não há mais estado disponível.
 - Foi acrescentado o método público de desfazer a última atualização.
 - A fachada passa a possuir o executor e o histórico de perfil, mantendo uma
   interface simples para a boundary.
+- `AtualizarPerfilSaudeCommand` e `RemoverPerfilSaudeCommand` recebem o Caretaker
+  na construção; a fachada, como Client, é quem o injeta.
 
 ### Persistência
 
@@ -116,7 +127,10 @@ alteração sem mudar validações, identidade ou vínculo do perfil com o usuá
 - há mais classes para uma operação antes feita por delegação direta;
 - apenas uma atualização pode ser desfeita e o estado não sobrevive ao processo;
 - remover o perfil depois de atualizá-lo impede restaurar aquele Memento, pois o
-  Originator correspondente não existe mais.
+  Originator correspondente não existe mais; o desfazer passa a responder que não
+  há atualização a desfazer, em vez de falhar por identidade;
+- o Caretaker único obriga o comando de remoção a conhecer o retrato guardado
+  para decidir se ele ainda faz sentido.
 
 ## Referências
 

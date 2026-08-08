@@ -12,7 +12,8 @@ class LembreteControl:
 
     Ponte entre interface e armazenamento, boundary e collection.
     Notifica a lista de observadores inscritos sempre que um lembrete
-    sofre uma mutação relevante (criação, atualização ou conclusão).
+    sofre uma mutação relevante (criação, atualização, conclusão,
+    cancelamento ou remoção).
     """
 
     def __init__(
