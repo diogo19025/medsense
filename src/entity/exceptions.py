@@ -14,6 +14,10 @@ class PerfilSaudeInvalidoError(ValidacaoError):
     """Perfil de saúde informado viola as regras de cadastro."""
 
 
+class LembreteSaudeInvalidoError(ValidacaoError):
+    """Lembrete de saúde informado viola as regras de cadastro."""
+
+
 class PersistenciaError(Exception):
     """Erro base para falhas ao persistir ou recuperar usuários."""
 

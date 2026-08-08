@@ -1,6 +1,7 @@
 import os
 import sys
 import unittest
+from datetime import datetime
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
@@ -38,7 +39,7 @@ def _dados_lembrete(id_lembrete: str = "lembrete-1") -> dict:
         "id_lembrete": id_lembrete,
         "titulo": "Tomar remedio",
         "descricao": "Losartana 50mg",
-        "data_hora": "10/07/2026 08:00",
+        "data_hora": datetime(2026, 7, 10, 8, 0),
         "tipo": TipoLembrete.MEDICAMENTO,
     }
 
