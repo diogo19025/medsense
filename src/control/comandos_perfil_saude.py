@@ -57,8 +57,18 @@ class RemoverPerfilSaudeCommand(Comando):
         self._email = email
 
     def executar(self) -> None:
+        removido = self._receiver.buscar_perfil(self._email)
         self._receiver.remover_perfil(self._email)
-        # Sem o Originator não há o que restaurar. Manter o retrato deixaria
-        # o desfazer preso num erro permanente, inclusive depois de o
-        # paciente cadastrar um perfil novo.
-        self._historico.limpar()
+        self._descartar_memento_do_perfil(removido)
+
+    # Sem o Originator não há o que restaurar. Manter o retrato do perfil
+    # removido deixaria o desfazer preso num erro permanente, inclusive
+    # depois de o paciente cadastrar um perfil novo. O Caretaker é único
+    # para todo o sistema, então o retrato só é descartado quando pertence
+    # ao perfil que acabou de sair — o desfazer dos demais pacientes
+    # continua disponível.
+    def _descartar_memento_do_perfil(self, removido: PerfilSaude | None) -> None:
+        if removido is None or not self._historico.possui_estado():
+            return
+        if self._historico.recuperar().id == removido.id:
+            self._historico.limpar()
