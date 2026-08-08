@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from control.facade_singleton_controller import FacadeSingletonController
 from entity.exceptions import ValidacaoError
-from entity.lembrete_saude import TipoLembrete
+from entity.lembrete_saude import LembreteSaude, TipoLembrete
 
 
 class LembreteView:
@@ -102,12 +102,18 @@ class LembreteView:
             print("Nenhum lembrete cadastrado.")
             return
         for lembrete in lembretes:
-            print(
-                f"[{lembrete.id_lembrete[:8]}...] {lembrete.titulo} | "
-                f"Tipo: {lembrete.tipo.value} | "
-                f"Situação: {lembrete.situacao.value} | "
-                f"Data: {lembrete.data_hora}"
-            )
+            print(self._formatar(lembrete))
+
+    # O id sai inteiro: é ele que as opções de atualizar e concluir pedem,
+    # e a listagem é o único lugar onde o usuário pode consultá-lo.
+    @staticmethod
+    def _formatar(lembrete: LembreteSaude) -> str:
+        return (
+            f"[{lembrete.id_lembrete}] {lembrete.titulo} | "
+            f"Tipo: {lembrete.tipo.value} | "
+            f"Situação: {lembrete.situacao.value} | "
+            f"Data: {lembrete.data_hora.strftime('%d/%m/%Y %H:%M')}"
+        )
 
     def exibir_menu(self) -> None:
         """Exibe o menu de lembretes e processa a escolha do usuário."""

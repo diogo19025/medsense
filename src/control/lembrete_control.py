@@ -39,9 +39,19 @@ class LembreteControl:
             self._observadores.remove(observador)
 
     # avisa todos os observadores inscritos sobre uma ação.
+    # a falha de um observador é registrada e segue adiante: o ADR-0009
+    # exige que as implementações sejam independentes entre si, e a mutação
+    # do Subject já aconteceu — deixar a exceção subir devolveria erro ao
+    # chamador com o lembrete já gravado na coleção.
     def _notificar_observadores(self, lembrete: LembreteSaude, acao: str) -> None:
         for observador in self._observadores:
-            observador.notificar(lembrete, acao)
+            try:
+                observador.notificar(lembrete, acao)
+            except Exception as erro:
+                self._logger.erro(
+                    f"Falha ao notificar {type(observador).__name__} sobre o "
+                    f"lembrete '{lembrete.id_lembrete}': {erro}"
+                )
 
 
     # REGRAS DE NEGÓCIO DA CONTROLADORA
