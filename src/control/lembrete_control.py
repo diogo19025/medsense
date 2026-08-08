@@ -12,7 +12,8 @@ class LembreteControl:
 
     Ponte entre interface e armazenamento, boundary e collection.
     Notifica a lista de observadores inscritos sempre que um lembrete
-    sofre uma mutação relevante (criação, atualização ou conclusão).
+    sofre uma mutação relevante (criação, atualização, conclusão,
+    cancelamento ou remoção).
     """
 
     def __init__(
@@ -39,9 +40,19 @@ class LembreteControl:
             self._observadores.remove(observador)
 
     # avisa todos os observadores inscritos sobre uma ação.
+    # a falha de um observador é registrada e segue adiante: o ADR-0009
+    # exige que as implementações sejam independentes entre si, e a mutação
+    # do Subject já aconteceu — deixar a exceção subir devolveria erro ao
+    # chamador com o lembrete já gravado na coleção.
     def _notificar_observadores(self, lembrete: LembreteSaude, acao: str) -> None:
         for observador in self._observadores:
-            observador.notificar(lembrete, acao)
+            try:
+                observador.notificar(lembrete, acao)
+            except Exception as erro:
+                self._logger.erro(
+                    f"Falha ao notificar {type(observador).__name__} sobre o "
+                    f"lembrete '{lembrete.id_lembrete}': {erro}"
+                )
 
 
     # REGRAS DE NEGÓCIO DA CONTROLADORA
@@ -71,12 +82,17 @@ class LembreteControl:
         self._logger.info(f"Lembrete criado para o usuario: {usuario.login}")
         return lembrete
 
+    # busca o lembrete pelo id, exigindo que ele exista.
+    def _exigir_lembrete(self, id_lembrete: str) -> LembreteSaude:
+        lembrete = self._collection.buscar_por_id(id_lembrete)
+        if lembrete is None:
+            raise ValueError(f"O lembrete com ID '{id_lembrete}' não foi encontrado.")
+        return lembrete
+
     # atualiza dados de um lembrete existente e notifica observadores.
     # lança ValueError se o lembrete não for encontrado.
     def atualizar_lembrete(self, id_lembrete: str, dados: dict) -> LembreteSaude:
-        atual = self._collection.buscar_por_id(id_lembrete)
-        if atual is None:
-            raise ValueError(f"O lembrete com ID '{id_lembrete}' não foi encontrado.")
+        atual = self._exigir_lembrete(id_lembrete)
 
         novo = LembreteSaude(
             id_lembrete=atual.id_lembrete,
@@ -93,15 +109,30 @@ class LembreteControl:
         return novo
 
     # marca o status do lembrete como concluído e notifica observadores.
+    # lança ValueError se o lembrete não for encontrado.
     def concluir_lembrete(self, id_lembrete: str) -> None:
-        lembrete = self._collection.buscar_por_id(id_lembrete)
-        if lembrete is None:
-            raise ValueError(f"Lembrete com ID '{id_lembrete}' não encontrado.")
-            
+        lembrete = self._exigir_lembrete(id_lembrete)
         lembrete.concluir()
         self._collection.atualizar(lembrete)
         self._notificar_observadores(lembrete, "concluído")
         self._logger.info(f"Lembrete concluido: {id_lembrete}")
+
+    # marca o status do lembrete como cancelado e notifica observadores.
+    # lança ValueError se o lembrete não for encontrado.
+    def cancelar_lembrete(self, id_lembrete: str) -> None:
+        lembrete = self._exigir_lembrete(id_lembrete)
+        lembrete.cancelar()
+        self._collection.atualizar(lembrete)
+        self._notificar_observadores(lembrete, "cancelado")
+        self._logger.info(f"Lembrete cancelado: {id_lembrete}")
+
+    # retira o lembrete da coleção e notifica observadores.
+    # lança ValueError se o lembrete não for encontrado.
+    def remover_lembrete(self, id_lembrete: str) -> None:
+        lembrete = self._exigir_lembrete(id_lembrete)
+        self._collection.remover(lembrete)
+        self._notificar_observadores(lembrete, "removido")
+        self._logger.info(f"Lembrete removido: {id_lembrete}")
 
     # retorna uma cópia da lista com todos os lembretes cadastrados.
     def listar_lembretes(self) -> list[LembreteSaude]:

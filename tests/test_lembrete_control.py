@@ -9,18 +9,42 @@ from control.lembrete_control import LembreteControl
 from control.observadores_lembrete import ObservadorLembrete
 from control.usuario_control import UsuarioControl
 from entity.lembrete_saude import LembreteSaude, SituacaoLembrete, TipoLembrete
+from infra.logger import Logger
 
 
 # ESPIÃO PARA TESTAR O OBSERVER
 
 class ObservadorEspiao(ObservadorLembrete):
     """Duplo de teste que captura as notificações disparadas pelo Subject."""
-    
+
     def __init__(self):
         self.notificacoes: list[tuple[LembreteSaude, str]] = []
 
     def notificar(self, lembrete: LembreteSaude, acao: str) -> None:
         self.notificacoes.append((lembrete, acao))
+
+
+class ObservadorQuebrado(ObservadorLembrete):
+    """Duplo de teste que simula um observador com defeito."""
+
+    def notificar(self, lembrete: LembreteSaude, acao: str) -> None:
+        raise RuntimeError("observador indisponivel")
+
+
+class LoggerEspiao(Logger):
+    """Duplo de teste que captura as mensagens registradas pelo Subject."""
+
+    def __init__(self):
+        self.erros: list[str] = []
+
+    def info(self, mensagem: str) -> None:
+        pass
+
+    def aviso(self, mensagem: str) -> None:
+        pass
+
+    def erro(self, mensagem: str) -> None:
+        self.erros.append(mensagem)
 
 
 # HELPERS DE DADOS
@@ -92,6 +116,36 @@ class LembreteControlObserverTest(unittest.TestCase):
         self.assertEqual(acao, "concluído")
         self.assertEqual(notificado.situacao, SituacaoLembrete.CONCLUIDO)
 
+    def test_deve_notificar_observador_no_cancelamento(self):
+        self._control.anexar_observador(self._espiao)
+        self._control.criar_lembrete(EMAIL_PACIENTE, _dados_lembrete())
+        self._espiao.notificacoes.clear()
+
+        self._control.cancelar_lembrete("L1")
+
+        notificado, acao = self._espiao.notificacoes[0]
+        self.assertEqual(acao, "cancelado")
+        self.assertEqual(notificado.situacao, SituacaoLembrete.CANCELADO)
+
+    def test_deve_notificar_observador_na_remocao(self):
+        self._control.anexar_observador(self._espiao)
+        self._control.criar_lembrete(EMAIL_PACIENTE, _dados_lembrete())
+        self._espiao.notificacoes.clear()
+
+        self._control.remover_lembrete("L1")
+
+        _, acao = self._espiao.notificacoes[0]
+        self.assertEqual(acao, "removido")
+        self.assertEqual(self._control.listar_lembretes(), [])
+
+    def test_deve_lancar_erro_ao_cancelar_lembrete_inexistente(self):
+        with self.assertRaisesRegex(ValueError, "nao foi encontrado|não foi encontrado"):
+            self._control.cancelar_lembrete("inexistente")
+
+    def test_deve_lancar_erro_ao_remover_lembrete_inexistente(self):
+        with self.assertRaisesRegex(ValueError, "nao foi encontrado|não foi encontrado"):
+            self._control.remover_lembrete("inexistente")
+
     def test_nao_deve_notificar_observador_desanexado(self):
         self._control.anexar_observador(self._espiao)
         self._control.desanexar_observador(self._espiao)
@@ -103,6 +157,32 @@ class LembreteControlObserverTest(unittest.TestCase):
     def test_deve_lancar_erro_ao_criar_lembrete_para_email_inexistente(self):
         with self.assertRaises(ValueError):
             self._control.criar_lembrete("nao@existe.com", _dados_lembrete())
+
+    def test_falha_de_observador_nao_deve_interromper_a_operacao(self):
+        self._control.anexar_observador(ObservadorQuebrado())
+
+        lembrete = self._control.criar_lembrete(EMAIL_PACIENTE, _dados_lembrete())
+
+        self.assertEqual(self._control.listar_lembretes(), [lembrete])
+
+    def test_falha_de_observador_nao_deve_impedir_a_notificacao_dos_demais(self):
+        self._control.anexar_observador(ObservadorQuebrado())
+        self._control.anexar_observador(self._espiao)
+
+        self._control.criar_lembrete(EMAIL_PACIENTE, _dados_lembrete())
+
+        self.assertEqual(len(self._espiao.notificacoes), 1)
+
+    def test_falha_de_observador_deve_ser_registrada_no_log(self):
+        logger = LoggerEspiao()
+        control = LembreteControl(self._usuarios, logger=logger)
+        control.anexar_observador(ObservadorQuebrado())
+
+        control.criar_lembrete(EMAIL_PACIENTE, _dados_lembrete())
+
+        (erro,) = logger.erros
+        self.assertIn("ObservadorQuebrado", erro)
+        self.assertIn("observador indisponivel", erro)
 
 if __name__ == "__main__":
     unittest.main()

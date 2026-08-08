@@ -1,14 +1,11 @@
+from boundary.entrada import ler_lista
 from boundary.lembrete_view import LembreteView
 from boundary.perfil_saude_view import PerfilSaudeView
 from control.facade_singleton_controller import FacadeSingletonController
-from control.lembrete_control import LembreteControl
-from control.perfil_saude_control import PerfilSaudeControl
 from control.resumo_saude_builder import (
-    DiretorResumoSaude,
     ResumoSaudeHTMLBuilder,
     ResumoSaudeTextoBuilder,
 )
-from control.usuario_control import UsuarioControl
 from entity.exceptions import PersistenciaError, ValidacaoError, SenhaInvalidaError, LoginInvalidoError
 
 
@@ -24,30 +21,17 @@ class UsuarioView:
 
     def __init__(
         self,
-        facade: FacadeSingletonController | None = None,
+        facade: FacadeSingletonController,
         perfil_saude_view: PerfilSaudeView | None = None,
     ):
-        if facade is not None:
-            self._facade = facade
-        else:
-            usuario_control = UsuarioControl()
-            perfil_control = PerfilSaudeControl(usuario_control)
-            lembrete_control = LembreteControl(usuario_control)
-            diretor_resumo_saude = DiretorResumoSaude(ResumoSaudeTextoBuilder())
-            self._facade = FacadeSingletonController.obter_instancia(
-                usuario_control,
-                perfil_control,
-                lembrete_control,
-                diretor_resumo_saude,
-            )
-
+        self._facade = facade
         self._perfil_saude_view = (
             perfil_saude_view
             if perfil_saude_view is not None
             # Preserva o histórico de comandos usado para desfazer alterações.
-            else PerfilSaudeView(self._facade)
+            else PerfilSaudeView(facade)
         )
-        self._lembrete_view = LembreteView(self._facade)
+        self._lembrete_view = LembreteView(facade)
 
     def _coletar_dados_base(self) -> dict:
         """Coleta dados comuns a todos os tipos de usuário."""
@@ -128,7 +112,11 @@ class UsuarioView:
         print("  [2] HTML")
         escolha = input("Escolha o formato: ").strip()
         formato = "html" if escolha == "2" else "texto"
-        conteudo = self._facade.gerar_relatorio_acessos(formato)
+        try:
+            conteudo = self._facade.gerar_relatorio_acessos(formato)
+        except ValueError as e:
+            print(f"Erro: {e}")
+            return
 
         extensao = "html" if formato == "html" else "txt"
         caminho = f"relatorio_acessos.{extensao}"
@@ -154,22 +142,39 @@ class UsuarioView:
         except ValueError as e:
             print(f"Erro: {e}")
 
+    # Escolhe o builder do diretor e devolve a extensão do arquivo gerado.
+    def _escolher_formato_resumo(self) -> str:
+        print("  [1] Texto")
+        print("  [2] HTML")
+        if input("Escolha o formato: ").strip() == "2":
+            self._facade.definir_formato_resumo_saude(ResumoSaudeHTMLBuilder())
+            return "html"
+        self._facade.definir_formato_resumo_saude(ResumoSaudeTextoBuilder())
+        return "txt"
+
+    # Monta o resumo completo (ADR-0008): a receita básica acrescida das
+    # seções opcionais informadas. Cada seção sem itens é omitida.
+    def _gerar_resumo_saude_completo(self, email: str):
+        return self._facade.gerar_resumo_saude_completo(
+            email,
+            medicamentos=ler_lista("Medicamentos"),
+            vacinas=ler_lista("Vacinas"),
+            consultas=ler_lista("Consultas"),
+            documentos=ler_lista("Documentos"),
+        )
+
     def _gerar_resumo_saude(self) -> None:
         print("\n--- Gerar Resumo de Saúde ---")
         email = input("Email do paciente: ")
-        print("  [1] Texto")
-        print("  [2] HTML")
-        escolha = input("Escolha o formato: ").strip()
-
-        if escolha == "2":
-            self._facade.definir_formato_resumo_saude(ResumoSaudeHTMLBuilder())
-            extensao = "html"
-        else:
-            self._facade.definir_formato_resumo_saude(ResumoSaudeTextoBuilder())
-            extensao = "txt"
+        extensao = self._escolher_formato_resumo()
+        completo = input("Incluir seções opcionais? [s/N]: ").strip().lower() == "s"
 
         try:
-            resumo = self._facade.gerar_resumo_saude_basico(email)
+            resumo = (
+                self._gerar_resumo_saude_completo(email)
+                if completo
+                else self._facade.gerar_resumo_saude_basico(email)
+            )
         except ValueError as e:
             print(f"Erro: {e}")
             return

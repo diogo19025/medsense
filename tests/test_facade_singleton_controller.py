@@ -1,6 +1,7 @@
 import os
 import sys
 import unittest
+from datetime import datetime
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
@@ -38,7 +39,7 @@ def _dados_lembrete(id_lembrete: str = "lembrete-1") -> dict:
         "id_lembrete": id_lembrete,
         "titulo": "Tomar remedio",
         "descricao": "Losartana 50mg",
-        "data_hora": "10/07/2026 08:00",
+        "data_hora": datetime(2026, 7, 10, 8, 0),
         "tipo": TipoLembrete.MEDICAMENTO,
     }
 
@@ -148,6 +149,48 @@ class FacadeSingletonControllerTest(unittest.TestCase):
 
         lembrete = facade.listar_lembretes()[0]
         self.assertEqual(lembrete.situacao.value, "concluído")
+
+    def test_deve_delegar_cancelamento_de_lembrete_para_lembrete_control(self):
+        facade = self._obter_instancia()
+        facade.adicionar_familiar_paciente(_dados_familiar_paciente())
+        facade.criar_lembrete("joao@email.com", _dados_lembrete())
+
+        facade.cancelar_lembrete("lembrete-1")
+
+        lembrete = facade.listar_lembretes()[0]
+        self.assertEqual(lembrete.situacao.value, "cancelado")
+
+    def test_deve_delegar_remocao_de_lembrete_para_lembrete_control(self):
+        facade = self._obter_instancia()
+        facade.adicionar_familiar_paciente(_dados_familiar_paciente())
+        facade.criar_lembrete("joao@email.com", _dados_lembrete())
+
+        facade.remover_lembrete("lembrete-1")
+
+        self.assertEqual(facade.listar_lembretes(), [])
+        self.assertEqual(self.lembrete_control.listar_lembretes(), [])
+
+    def test_deve_delegar_listagem_de_lembretes_por_usuario(self):
+        facade = self._obter_instancia()
+        facade.adicionar_familiar_paciente(_dados_familiar_paciente())
+        facade.criar_lembrete("joao@email.com", _dados_lembrete())
+
+        lembretes = facade.listar_lembretes_por_usuario("joao@email.com")
+
+        self.assertEqual(len(lembretes), 1)
+
+    def test_deve_gerar_resumo_de_saude_completo_com_secoes_opcionais(self):
+        facade = self._obter_instancia()
+        facade.adicionar_familiar_paciente(_dados_familiar_paciente())
+        facade.cadastrar_perfil_saude("joao@email.com", _dados_perfil_saude())
+
+        resumo = facade.gerar_resumo_saude_completo(
+            "joao@email.com", medicamentos=["Losartana"], vacinas=["Gripe"]
+        )
+
+        self.assertIn("Losartana", resumo.conteudo)
+        self.assertIn("Gripe", resumo.conteudo)
+        self.assertNotIn("Consultas", resumo.secoes)
 
     def test_deve_gerar_resumo_de_saude_basico_via_diretor(self):
         facade = self._obter_instancia()

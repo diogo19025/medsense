@@ -25,6 +25,7 @@ from entity.perfil_saude import PerfilSaude
 
 
 EMAIL_PACIENTE = "ana@email.com"
+EMAIL_SEGUNDO_PACIENTE = "bruno@email.com"
 
 
 def _perfil(**campos) -> PerfilSaude:
@@ -115,9 +116,10 @@ class CommandPerfilSaudeTest(unittest.TestCase):
 
         self.receiver.remover_perfil.assert_called_once_with(EMAIL_PACIENTE)
 
-    def test_remocao_deve_descartar_o_memento_da_ultima_atualizacao(self):
+    def test_remocao_deve_descartar_o_memento_do_perfil_removido(self):
         historico = HistoricoPerfilSaude()
         historico.salvar(_perfil().criar_memento())
+        self.receiver.buscar_perfil.return_value = _perfil()
         comando = RemoverPerfilSaudeCommand(
             self.receiver, historico, EMAIL_PACIENTE
         )
@@ -125,6 +127,21 @@ class CommandPerfilSaudeTest(unittest.TestCase):
         comando.executar()
 
         self.assertFalse(historico.possui_estado())
+
+    def test_remocao_deve_preservar_o_memento_de_outro_perfil(self):
+        historico = HistoricoPerfilSaude()
+        memento_de_outro_paciente = _perfil().criar_memento()
+        historico.salvar(memento_de_outro_paciente)
+        self.receiver.buscar_perfil.return_value = _perfil(
+            id="perfil-2", usuario_id="usuario-2"
+        )
+        comando = RemoverPerfilSaudeCommand(
+            self.receiver, historico, "bruno@email.com"
+        )
+
+        comando.executar()
+
+        self.assertEqual(historico.recuperar(), memento_de_outro_paciente)
 
     def test_executor_deve_acionar_o_comando_recebido(self):
         comando = Mock(spec=Comando)
@@ -267,6 +284,23 @@ class DesfazerAtualizacaoPerfilTest(unittest.TestCase):
     def tearDown(self):
         FacadeSingletonController.resetar_instancia()
 
+    # Cadastra um segundo paciente, com perfil, para os cenários em que o
+    # Caretaker precisa distinguir de quem é o retrato guardado.
+    def _cadastrar_segundo_paciente(self) -> None:
+        self.usuario_control.adicionar_familiar_paciente(
+            {
+                "nome": "Bruno Souza",
+                "login": "bruno",
+                "email": EMAIL_SEGUNDO_PACIENTE,
+                "senha": "SenhaForte1",
+                "data_nascimento": "1995-05-05",
+                "parentesco": "Filho",
+            }
+        )
+        self.facade.cadastrar_perfil_saude(
+            EMAIL_SEGUNDO_PACIENTE, _dados_perfil(tipo_sanguineo="A+")
+        )
+
     def test_deve_desfazer_ultima_atualizacao_e_restaurar_todos_os_campos(self):
         id_original = self.original.id
         usuario_id_original = self.original.usuario_id
@@ -311,6 +345,27 @@ class DesfazerAtualizacaoPerfilTest(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "Nao existe atualizacao"):
             self.facade.desfazer_ultima_atualizacao_perfil()
+
+    def test_remover_o_proprio_perfil_deve_liberar_o_desfazer(self):
+        self.facade.atualizar_perfil_saude(
+            EMAIL_PACIENTE, {"tipo_sanguineo": "AB-"}
+        )
+        self.facade.remover_perfil_saude(EMAIL_PACIENTE)
+        self.facade.cadastrar_perfil_saude(EMAIL_PACIENTE, _dados_perfil())
+
+        with self.assertRaisesRegex(ValueError, "Nao existe atualizacao"):
+            self.facade.desfazer_ultima_atualizacao_perfil()
+
+    def test_remover_perfil_de_outro_paciente_deve_preservar_o_desfazer(self):
+        self._cadastrar_segundo_paciente()
+        self.facade.atualizar_perfil_saude(
+            EMAIL_PACIENTE, {"tipo_sanguineo": "AB-"}
+        )
+
+        self.facade.remover_perfil_saude(EMAIL_SEGUNDO_PACIENTE)
+
+        restaurado = self.facade.desfazer_ultima_atualizacao_perfil()
+        self.assertEqual(restaurado.tipo_sanguineo, "O+")
 
     def test_deve_persistir_o_estado_restaurado(self):
         self.facade.atualizar_perfil_saude(
