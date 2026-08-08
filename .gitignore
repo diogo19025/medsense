@@ -9,3 +9,6 @@ __pycache__/
 
 # Relatórios gerados em tempo de execução
 relatorio_acessos.*
+
+# Resumos gerados em tempo de execução
+resumo_saude.*

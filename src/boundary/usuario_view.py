@@ -1,7 +1,11 @@
+from boundary.entrada import ler_lista
+from boundary.lembrete_view import LembreteView
 from boundary.perfil_saude_view import PerfilSaudeView
 from control.facade_singleton_controller import FacadeSingletonController
-from control.perfil_saude_control import PerfilSaudeControl
-from control.usuario_control import UsuarioControl
+from control.resumo_saude_builder import (
+    ResumoSaudeHTMLBuilder,
+    ResumoSaudeTextoBuilder,
+)
 from entity.exceptions import PersistenciaError, ValidacaoError, SenhaInvalidaError, LoginInvalidoError
 
 
@@ -11,32 +15,23 @@ class UsuarioView:
     Responsável apenas por entrada e saída de dados.
 
     Fala com o sistema através da FacadeSingletonController: não conhece
-    UsuarioControl nem PerfilSaudeControl diretamente, apenas a fachada
-    que os integra.
+    UsuarioControl, PerfilSaudeControl nem LembreteControl diretamente,
+    apenas a fachada que os integra.
     """
 
     def __init__(
         self,
-        facade: FacadeSingletonController | None = None,
+        facade: FacadeSingletonController,
         perfil_saude_view: PerfilSaudeView | None = None,
     ):
-        if facade is not None:
-            self._facade = facade
-        else:
-            usuario_control = UsuarioControl()
-            perfil_control = PerfilSaudeControl(usuario_control)
-            self._facade = FacadeSingletonController.obter_instancia(
-                usuario_control, perfil_control
-            )
-
+        self._facade = facade
         self._perfil_saude_view = (
             perfil_saude_view
             if perfil_saude_view is not None
-            # A facade expõe buscar_usuario_por_email, então serve como
-            # o "usuario_control" que o PerfilSaudeControl espera —
-            # mantém os dois usando a mesma base de usuários.
-            else PerfilSaudeView(PerfilSaudeControl(self._facade))
+            # Preserva o histórico de comandos usado para desfazer alterações.
+            else PerfilSaudeView(facade)
         )
+        self._lembrete_view = LembreteView(facade)
 
     def _coletar_dados_base(self) -> dict:
         """Coleta dados comuns a todos os tipos de usuário."""
@@ -117,7 +112,11 @@ class UsuarioView:
         print("  [2] HTML")
         escolha = input("Escolha o formato: ").strip()
         formato = "html" if escolha == "2" else "texto"
-        conteudo = self._facade.gerar_relatorio_acessos(formato)
+        try:
+            conteudo = self._facade.gerar_relatorio_acessos(formato)
+        except ValueError as e:
+            print(f"Erro: {e}")
+            return
 
         extensao = "html" if formato == "html" else "txt"
         caminho = f"relatorio_acessos.{extensao}"
@@ -132,7 +131,62 @@ class UsuarioView:
     def _exibir_quantidade_total_entidades(self) -> None:
         print("\n--- Total de Entidades Cadastradas ---")
         total = self._facade.quantidade_total_entidades()
-        print(f"Usuários + perfis de saúde cadastrados: {total}")
+        print(f"Usuários + perfis + lembretes cadastrados: {total}")
+
+    def _desfazer_atualizacao_perfil(self) -> None:
+        print("\n--- Desfazer Última Atualização de Perfil ---")
+        try:
+            perfil = self._facade.desfazer_ultima_atualizacao_perfil()
+            print("Última atualização desfeita com sucesso!")
+            print(perfil)
+        except ValueError as e:
+            print(f"Erro: {e}")
+
+    # Escolhe o builder do diretor e devolve a extensão do arquivo gerado.
+    def _escolher_formato_resumo(self) -> str:
+        print("  [1] Texto")
+        print("  [2] HTML")
+        if input("Escolha o formato: ").strip() == "2":
+            self._facade.definir_formato_resumo_saude(ResumoSaudeHTMLBuilder())
+            return "html"
+        self._facade.definir_formato_resumo_saude(ResumoSaudeTextoBuilder())
+        return "txt"
+
+    # Monta o resumo completo (ADR-0008): a receita básica acrescida das
+    # seções opcionais informadas. Cada seção sem itens é omitida.
+    def _gerar_resumo_saude_completo(self, email: str):
+        return self._facade.gerar_resumo_saude_completo(
+            email,
+            medicamentos=ler_lista("Medicamentos"),
+            vacinas=ler_lista("Vacinas"),
+            consultas=ler_lista("Consultas"),
+            documentos=ler_lista("Documentos"),
+        )
+
+    def _gerar_resumo_saude(self) -> None:
+        print("\n--- Gerar Resumo de Saúde ---")
+        email = input("Email do paciente: ")
+        extensao = self._escolher_formato_resumo()
+        completo = input("Incluir seções opcionais? [s/N]: ").strip().lower() == "s"
+
+        try:
+            resumo = (
+                self._gerar_resumo_saude_completo(email)
+                if completo
+                else self._facade.gerar_resumo_saude_basico(email)
+            )
+        except ValueError as e:
+            print(f"Erro: {e}")
+            return
+
+        caminho = f"resumo_saude.{extensao}"
+        try:
+            with open(caminho, "w", encoding="utf-8") as arquivo:
+                arquivo.write(resumo.conteudo)
+            print(f"Resumo gerado em '{caminho}'.")
+        except OSError as e:
+            print(f"Erro ao gravar o resumo: {e}")
+        print(resumo.conteudo)
 
     def exibir_menu(self) -> None:
         """Exibe o menu principal e processa a escolha do usuário."""
@@ -145,6 +199,9 @@ class UsuarioView:
             print("  [5] Gerar relatório de acessos")
             print("  [6] Gerenciar perfis de saúde")
             print("  [7] Ver total de entidades cadastradas")
+            print("  [8] Desfazer última atualização de perfil")
+            print("  [9] Gerenciar lembretes de saúde")
+            print("  [10] Gerar resumo de saúde")
             print("  [0] Sair")
 
             escolha = input("\nEscolha uma opção: ").strip()
@@ -163,6 +220,12 @@ class UsuarioView:
                 self._perfil_saude_view.exibir_menu()
             elif escolha == "7":
                 self._exibir_quantidade_total_entidades()
+            elif escolha == "8":
+                self._desfazer_atualizacao_perfil()
+            elif escolha == "9":
+                self._lembrete_view.exibir_menu()
+            elif escolha == "10":
+                self._gerar_resumo_saude()
             elif escolha == "0":
                 print("Encerrando o sistema.")
                 break

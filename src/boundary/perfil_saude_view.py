@@ -1,4 +1,5 @@
-from control.perfil_saude_control import PerfilSaudeControl
+from boundary.entrada import ler_lista
+from control.facade_singleton_controller import FacadeSingletonController
 from entity.exceptions import PersistenciaError, ValidacaoError
 
 
@@ -8,21 +9,15 @@ class PerfilSaudeView:
     Responsável apenas por entrada e saída de dados.
     """
 
-    def __init__(self, control: PerfilSaudeControl):
-        self._control = control
-
-    # Converte "a, b, c" numa lista de itens sem espaços sobrando.
-    @staticmethod
-    def _ler_lista(rotulo: str) -> list[str]:
-        entrada = input(f"{rotulo} (separadas por vírgula, vazio para nenhuma): ")
-        return [item.strip() for item in entrada.split(",") if item.strip()]
+    def __init__(self, facade: FacadeSingletonController):
+        self._facade = facade
 
     def _coletar_dados(self) -> dict:
         return {
             "tipo_sanguineo": input("Tipo sanguíneo (ex.: O+, AB-): "),
-            "alergias": self._ler_lista("Alergias"),
-            "condicoes_cronicas": self._ler_lista("Condições crônicas"),
-            "medicamentos_continuos": self._ler_lista("Medicamentos contínuos"),
+            "alergias": ler_lista("Alergias"),
+            "condicoes_cronicas": ler_lista("Condições crônicas"),
+            "medicamentos_continuos": ler_lista("Medicamentos contínuos"),
             "observacoes": input("Observações: "),
         }
 
@@ -30,7 +25,7 @@ class PerfilSaudeView:
         print("\n--- Cadastro de Perfil de Saúde ---")
         email = input("Email do paciente: ")
         try:
-            self._control.cadastrar_perfil(email, self._coletar_dados())
+            self._facade.cadastrar_perfil_saude(email, self._coletar_dados())
             print("Perfil de saúde cadastrado com sucesso!")
         except (ValidacaoError, ValueError) as e:
             print(f"Erro: {e}")
@@ -41,7 +36,7 @@ class PerfilSaudeView:
         print("\n--- Buscar Perfil de Saúde ---")
         email = input("Email do paciente: ")
         try:
-            perfil = self._control.buscar_perfil(email)
+            perfil = self._facade.buscar_perfil_saude(email)
         except ValueError as e:
             print(f"Erro: {e}")
             return
@@ -52,7 +47,7 @@ class PerfilSaudeView:
 
     def _listar_perfis(self) -> None:
         print("\n--- Lista de Perfis de Saúde ---")
-        perfis = self._control.listar_perfis()
+        perfis = self._facade.listar_perfis_saude()
         if not perfis:
             print("Nenhum perfil de saúde cadastrado.")
             return
@@ -66,13 +61,11 @@ class PerfilSaudeView:
         if tipo_sanguineo:
             dados["tipo_sanguineo"] = tipo_sanguineo
         if input("Atualizar alergias? [s/N]: ").strip().lower() == "s":
-            dados["alergias"] = self._ler_lista("Alergias")
+            dados["alergias"] = ler_lista("Alergias")
         if input("Atualizar condições crônicas? [s/N]: ").strip().lower() == "s":
-            dados["condicoes_cronicas"] = self._ler_lista("Condições crônicas")
+            dados["condicoes_cronicas"] = ler_lista("Condições crônicas")
         if input("Atualizar medicamentos contínuos? [s/N]: ").strip().lower() == "s":
-            dados["medicamentos_continuos"] = self._ler_lista(
-                "Medicamentos contínuos"
-            )
+            dados["medicamentos_continuos"] = ler_lista("Medicamentos contínuos")
         if input("Atualizar observações? [s/N]: ").strip().lower() == "s":
             dados["observacoes"] = input("Observações: ")
         return dados
@@ -80,10 +73,15 @@ class PerfilSaudeView:
     def _atualizar_perfil(self) -> None:
         print("\n--- Atualizar Perfil de Saúde ---")
         email = input("Email do paciente: ")
+        dados = self._coletar_dados_atualizacao()
+        # Uma atualização sem campos não muda nada, mas guardaria um memento
+        # e ocuparia a única vaga de desfazer com uma alteração inexistente.
+        if not dados:
+            print("Nenhum campo informado. O perfil de saúde não foi alterado.")
+            return
+
         try:
-            perfil = self._control.atualizar_perfil(
-                email, self._coletar_dados_atualizacao()
-            )
+            perfil = self._facade.atualizar_perfil_saude(email, dados)
             print("Perfil de saúde atualizado com sucesso!")
             print(perfil)
         except (ValidacaoError, ValueError) as e:
@@ -95,7 +93,7 @@ class PerfilSaudeView:
         print("\n--- Remover Perfil de Saúde ---")
         email = input("Email do paciente: ")
         try:
-            self._control.remover_perfil(email)
+            self._facade.remover_perfil_saude(email)
             print("Perfil de saúde removido com sucesso!")
         except ValueError as e:
             print(f"Erro: {e}")

@@ -1,7 +1,13 @@
 from boundary.perfil_saude_view import PerfilSaudeView
 from boundary.usuario_view import UsuarioView
 from control.facade_singleton_controller import FacadeSingletonController
+from control.lembrete_control import LembreteControl
+from control.observadores_lembrete import (
+    NotificadorConsole,
+    RegistroNotificacaoObserver,
+)
 from control.perfil_saude_control import PerfilSaudeControl
+from control.resumo_saude_builder import DiretorResumoSaude, ResumoSaudeTextoBuilder
 from control.usuario_control import UsuarioControl
 from entity.exceptions import PersistenciaError
 from infra.logging_adapter import LoggingAdapter
@@ -42,9 +48,23 @@ def main():
         print(f"Erro ao inicializar o armazenamento: {erro}")
         return
 
-    facade = FacadeSingletonController.obter_instancia(usuario_control, perfil_control)
+    lembrete_control = LembreteControl(usuario_control, logger=logger)
+    lembrete_control.anexar_observador(NotificadorConsole())
+    lembrete_control.anexar_observador(RegistroNotificacaoObserver(logger))
 
-    view = UsuarioView(facade, PerfilSaudeView(perfil_control))
+    # O diretor começa com o builder de texto; a facade permite trocar
+    # para HTML sob demanda (definir_formato_resumo_saude), sem que a
+    # camada de boundary precise conhecer as classes concretas.
+    diretor_resumo_saude = DiretorResumoSaude(ResumoSaudeTextoBuilder())
+
+    facade = FacadeSingletonController.obter_instancia(
+        usuario_control,
+        perfil_control,
+        lembrete_control,
+        diretor_resumo_saude,
+    )
+
+    view = UsuarioView(facade, PerfilSaudeView(facade))
     view.exibir_menu()
 
 
