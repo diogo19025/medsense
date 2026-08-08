@@ -1,12 +1,14 @@
 # MedSense
 
-Sistema de gerenciamento de usuários, perfis de saúde e lembretes para clínicas e hospitais, desenvolvido em Python com arquitetura em camadas e aplicação de padrões de projeto (GoF).
+Sistema de gestão familiar de saúde desenvolvido em Python, com interface de linha de comando, arquitetura em camadas e aplicação de padrões de projeto (GoF).
 
 ---
 
 ## Sumário
 
 - [Visão geral](#visão-geral)
+- [Repositório](#repositório)
+- [Documentação](#documentação)
 - [Arquitetura](#arquitetura)
 - [Padrões de projeto aplicados](#padrões-de-projeto-aplicados)
 - [Diagramas C4](#diagramas-c4)
@@ -20,7 +22,7 @@ Sistema de gerenciamento de usuários, perfis de saúde e lembretes para clínic
 
 ## Visão geral
 
-O MedSense permite que clínicas e hospitais gerenciem:
+O MedSense permite organizar informações de saúde de familiares:
 
 - **Usuários** — familiares de pacientes e responsáveis familiares, com cadastro, listagem e controle de acesso.
 - **Perfis de saúde** — tipo sanguíneo, alergias, condições crônicas e medicamentos contínuos, com histórico de alterações e possibilidade de desfazer a última atualização.
@@ -28,6 +30,18 @@ O MedSense permite que clínicas e hospitais gerenciem:
 - **Resumos de saúde** — documentos gerados em texto ou HTML, reunindo dados do usuário, perfil e seções opcionais.
 
 Usuários, acessos e perfis de saúde podem ser persistidos em memória RAM, arquivo binário ou banco SQLite, escolhido no início da execução. Lembretes e resumos não têm repositório: os lembretes vivem apenas na coleção em RAM durante a execução, e os resumos são gerados sob demanda em arquivo (`resumo_saude.txt`/`.html`).
+
+## Repositório
+
+[https://github.com/diogo19025/medsense](https://github.com/diogo19025/medsense)
+
+## Documentação
+
+- [Documento de Requisitos de Software](docs/MedSense_Documento_Requisitos_Revisado.pdf)
+- [Índice da documentação](docs/README.md)
+- [Decisões arquiteturais](docs/adr/)
+- [Diagrama de casos de uso](docs/casos-de-uso/DiagramaCasosDeUso.jpg)
+- [Diagramas de classes de análise](docs/classes-analise/)
 
 ## Arquitetura
 
@@ -63,84 +77,31 @@ Cada padrão tem um ADR (Architecture Decision Record) correspondente em [`docs/
 
 ### Nível 1 — Contexto
 
-```mermaid
-C4Context
-    title Diagrama de Contexto - MedSense
-
-    Person(familiar, "Familiar Paciente", "Gerencia seus dados de saude e lembretes")
-    Person(responsavel, "Responsavel Familiar", "Acompanha e gerencia perfis de pacientes sob sua responsabilidade")
-
-    System(medsense, "MedSense", "Sistema de gerenciamento de usuarios, perfis de saude e lembretes")
-
-    System_Ext(armazenamento, "Mecanismo de Armazenamento", "Memoria RAM, arquivo binario ou banco SQLite")
-
-    Rel(familiar, medsense, "Cadastra dados, perfil de saude e lembretes")
-    Rel(responsavel, medsense, "Acompanha perfis e lembretes de pacientes")
-    Rel(medsense, armazenamento, "Persiste e recupera dados")
-```
+![Diagrama C4 de contexto do MedSense](docs/arquitetura/c4-nivel-1-contexto.png)
 
 ### Nível 2 — Contêineres
 
-```mermaid
-C4Container
-    title Diagrama de Conteineres - MedSense
-
-    Person(usuario, "Usuario", "Familiar Paciente ou Responsavel Familiar")
-
-    Container_Boundary(medsense, "MedSense (aplicacao CLI)") {
-        Container(boundary, "Camada Boundary", "Python", "Menus e interfaces de linha de comando")
-        Container(facade, "FacadeSingletonController", "Python", "Fachada unica de acesso ao sistema (Facade + Singleton)")
-        Container(control, "Camada Control", "Python", "Regras de negocio: usuarios, perfis, lembretes, resumos")
-        Container(entity, "Camada Entity", "Python", "Entidades de dominio")
-        Container(collection, "Camada Collection", "Python", "Cache de trabalho em memoria")
-    }
-
-    ContainerDb(memoria, "Repositorio em Memoria", "Python dict/list", "Sem durabilidade")
-    ContainerDb(arquivo, "Repositorio em Arquivo", "Arquivo binario", "Um arquivo por entidade")
-    ContainerDb(sqlite, "Repositorio SQLite", "SQLite", "Um banco, uma tabela por entidade")
-
-    Rel(usuario, boundary, "Interage via terminal")
-    Rel(boundary, facade, "Chama operacoes")
-    Rel(facade, control, "Delega para os controllers")
-    Rel(control, entity, "Cria e manipula")
-    Rel(control, collection, "Le e escreve no cache")
-    Rel(collection, memoria, "Persiste (opcional)")
-    Rel(collection, arquivo, "Persiste (opcional)")
-    Rel(collection, sqlite, "Persiste (opcional)")
-```
+![Diagrama C4 de contêineres do MedSense](docs/arquitetura/c4-nivel-2-conteineres.png)
 
 ### Nível 3 — Componentes (Camada Control)
 
-```mermaid
-C4Component
-    title Diagrama de Componentes - Camada Control
-
-    Container_Boundary(facade_boundary, "FacadeSingletonController") {
-        Component(facade, "Facade", "Classe", "Ponto unico de entrada (Facade + Singleton)")
-    }
-
-    Component(usuario_ctrl, "UsuarioControl", "Classe", "CRUD de usuarios e acessos")
-    Component(perfil_ctrl, "PerfilSaudeControl", "Classe", "CRUD de perfis de saude")
-    Component(lembrete_ctrl, "LembreteControl", "Classe", "CRUD de lembretes (Subject do Observer)")
-    Component(executor, "ExecutorComandos", "Classe", "Executa comandos (Command)")
-    Component(historico, "HistoricoPerfilSaude", "Classe", "Guarda o memento do ultimo estado (Memento)")
-    Component(diretor, "DiretorResumoSaude", "Classe", "Orquestra a construcao de resumos (Builder)")
-    Component(observadores, "ObservadorLembrete", "Interface", "Console e Registro de notificacoes")
-
-    Rel(facade, usuario_ctrl, "delega")
-    Rel(facade, perfil_ctrl, "delega via Command")
-    Rel(facade, lembrete_ctrl, "delega")
-    Rel(facade, executor, "usa")
-    Rel(facade, historico, "usa")
-    Rel(facade, diretor, "usa")
-    Rel(executor, perfil_ctrl, "executa comandos sobre")
-    Rel(lembrete_ctrl, observadores, "notifica")
-    Rel(perfil_ctrl, historico, "salva memento em")
-```
+![Diagrama C4 de componentes da camada Control](docs/arquitetura/c4-nivel-3-componentes.png)
 
 ## Diagrama de classes
 
-Diagrama de classes com cores por padrão de projeto (Facade/Singleton em azul, Command/Memento em roxo, Observer em verde, Builder em laranja):
+Os diagramas oficiais foram divididos em duas partes para preservar a legibilidade das classes, relacionamentos e padrões.
+
+### Padrões comportamentais e de criação na camada Control
+
+![Diagrama de classes dos padrões da camada Control](docs/arquitetura/classes-padroes-control.png)
+
+### Persistência, logging e relatórios
+
+![Diagrama de classes de persistência, logging e relatórios](docs/arquitetura/classes-persistencia-logging-relatorios.png)
+
+### Visão resumida em Mermaid
+
+O modelo abaixo oferece uma visão textual complementar dos principais padrões comportamentais e de criação:
 
 ```mermaid
 classDiagram
@@ -286,8 +247,12 @@ python test_facade_singleton_controller.py
 ```
 medsense/
 ├── docs/
-│   ├── adr/                  # Architecture Decision Records
-│   └── classes-analise/      # Diagramas de análise (BCE)
+│   ├── adr/                   # Architecture Decision Records
+│   ├── arquitetura/           # Diagramas C4 e diagramas de classes finais
+│   ├── casos-de-uso/          # Diagrama de casos de uso
+│   ├── classes-analise/       # Diagramas de análise (BCE)
+│   ├── README.md              # Índice dos artefatos de documentação
+│   └── MedSense_Documento_Requisitos_Revisado.pdf
 ├── src/
 │   ├── boundary/              # Interfaces de linha de comando
 │   ├── collection/            # Cache em memória
