@@ -86,20 +86,54 @@ class LembreteView:
         except (ValidacaoError, ValueError) as e:
             print(f"Erro: {e}")
 
-    def _concluir_lembrete(self) -> None:
-        print("\n--- Concluir Lembrete ---")
+    # Pede o id e aplica a ação sobre o lembrete correspondente.
+    def _aplicar_por_id(self, titulo: str, acao, sucesso: str) -> None:
+        print(f"\n--- {titulo} ---")
         id_lembrete = input("ID do lembrete: ")
         try:
-            self._facade.concluir_lembrete(id_lembrete)
-            print("Lembrete marcado como concluído!")
+            acao(id_lembrete)
+            print(sucesso)
         except ValueError as e:
             print(f"Erro: {e}")
 
+    def _concluir_lembrete(self) -> None:
+        self._aplicar_por_id(
+            "Concluir Lembrete",
+            self._facade.concluir_lembrete,
+            "Lembrete marcado como concluído!",
+        )
+
+    def _cancelar_lembrete(self) -> None:
+        self._aplicar_por_id(
+            "Cancelar Lembrete",
+            self._facade.cancelar_lembrete,
+            "Lembrete cancelado!",
+        )
+
+    def _remover_lembrete(self) -> None:
+        self._aplicar_por_id(
+            "Remover Lembrete",
+            self._facade.remover_lembrete,
+            "Lembrete removido com sucesso!",
+        )
+
     def _listar_lembretes(self) -> None:
         print("\n--- Lista de Lembretes ---")
-        lembretes = self._facade.listar_lembretes()
+        self._exibir(self._facade.listar_lembretes(), "Nenhum lembrete cadastrado.")
+
+    def _listar_lembretes_do_paciente(self) -> None:
+        print("\n--- Lembretes do Paciente ---")
+        email = input("Email do paciente: ")
+        try:
+            lembretes = self._facade.listar_lembretes_por_usuario(email)
+        except ValueError as e:
+            print(f"Erro: {e}")
+            return
+        self._exibir(lembretes, "O paciente não possui lembretes.")
+
+    def _exibir(self, lembretes: list[LembreteSaude], vazio: str) -> None:
         if not lembretes:
-            print("Nenhum lembrete cadastrado.")
+            print(vazio)
             return
         for lembrete in lembretes:
             print(self._formatar(lembrete))
@@ -122,7 +156,10 @@ class LembreteView:
             print("  [1] Criar lembrete")
             print("  [2] Atualizar lembrete")
             print("  [3] Concluir lembrete")
-            print("  [4] Listar todos os lembretes")
+            print("  [4] Cancelar lembrete")
+            print("  [5] Remover lembrete")
+            print("  [6] Listar todos os lembretes")
+            print("  [7] Listar lembretes de um paciente")
             print("  [0] Voltar ao menu principal")
 
             escolha = input("\nEscolha uma opção: ").strip()
@@ -134,7 +171,13 @@ class LembreteView:
             elif escolha == "3":
                 self._concluir_lembrete()
             elif escolha == "4":
+                self._cancelar_lembrete()
+            elif escolha == "5":
+                self._remover_lembrete()
+            elif escolha == "6":
                 self._listar_lembretes()
+            elif escolha == "7":
+                self._listar_lembretes_do_paciente()
             elif escolha == "0":
                 break
             else:
